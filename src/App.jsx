@@ -8,6 +8,12 @@ import PracticeSelection from './pages/PracticeSelection'
 import Dashboard from './pages/Dashboard'
 import TutorDashboard from './pages/TutorDashboard'
 import AdminDashboard from './pages/AdminDashboard'
+import CreateRoom from './pages/CreateRoom'
+import CreateReadingSet from './pages/CreateReadingSet'
+import ReadingSetDetail from './pages/ReadingSetDetail'
+import CreateTest from './pages/CreateTest'
+import ReadingSetList from './pages/ReadingSetList'
+import TestList from './pages/TestList'
 
 // Home Page Component
 const Home = () => {
@@ -59,8 +65,17 @@ function App() {
 
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<Dashboard />} />
+
             <Route path="/tutor" element={<TutorDashboard />} />
+            <Route path="/tutor/create-room" element={<CreateRoom />} />
+
             <Route path="/admin" element={<AdminDashboard />} />
+            <Route path="/admin/reading-sets" element={<ReadingSetList />} />
+            <Route path="/admin/reading-set/create" element={<CreateReadingSet />} />
+            <Route path="/admin/reading-set/:id" element={<ReadingSetDetail />} />
+
+            <Route path="/admin/tests" element={<TestList />} />
+            <Route path="/admin/test/create" element={<CreateTest />} />
           </Route>
         </Route>
       </Routes>

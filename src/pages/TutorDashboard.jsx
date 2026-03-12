@@ -1,18 +1,10 @@
-import React, { useState } from 'react';
+import React from 'react';
 import { FaPlus, FaPlay } from 'react-icons/fa';
+import { Link } from 'react-router-dom';
 
 const TutorDashboard = () => {
-  // State to handle the "Create Room" modal (we will build this next!)
-  const [isModalOpen, setIsModalOpen] = useState(false);
-
-  const handleCreateRoomClick = () => {
-    // For now, this just opens the modal state
-    setIsModalOpen(true);
-    console.log("Opening Create Room Modal...");
-  };
-
   return (
-    <div className="space-y-8">
+    <div className="space-y-8 relative">
       {/* Dashboard Header Section */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
         <div>
@@ -24,17 +16,17 @@ const TutorDashboard = () => {
           </p>
         </div>
 
-        {/* Create Room Button */}
-        <button
-          onClick={handleCreateRoomClick}
+        {/* Create Room Button - Now navigates to a new page! */}
+        <Link
+          to="/tutor/create-room"
           className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] active:scale-95 transition-all"
         >
           <FaPlay className="w-4 h-4" />
-          <span>Host Live Room</span>
-        </button>
+          <span>Create Assessment Room</span>
+        </Link>
       </div>
 
-      {/* Quick Stats / Overview (Placeholders for later) */}
+      {/* Quick Stats / Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
           <h3 className="text-gray-500 text-sm font-semibold mb-1">Active Rooms</h3>
@@ -55,30 +47,14 @@ const TutorDashboard = () => {
         <h2 className="text-lg font-bold text-gray-900 mb-4">Recent Live Sessions</h2>
         <div className="text-center py-12 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
           <p className="text-gray-500">You haven't hosted any live rooms yet.</p>
-          <button 
-            onClick={handleCreateRoomClick}
-            className="mt-4 text-indigo-600 font-semibold hover:text-indigo-700 flex items-center justify-center gap-1 mx-auto"
+          <Link 
+            to="/tutor/create-room"
+            className="mt-4 text-indigo-600 font-semibold hover:text-indigo-700 flex items-center justify-center gap-1 mx-auto transition-colors inline-flex"
           >
             <FaPlus className="w-3 h-3" /> Create your first room
-          </button>
+          </Link>
         </div>
       </div>
-
-      {/* Placeholder for the Create Room Modal */}
-      {isModalOpen && (
-        <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center">
-          <div className="bg-white rounded-2xl p-8 max-w-md w-full m-4">
-            <h2 className="text-2xl font-bold mb-4">Create Live Room</h2>
-            <p className="text-gray-600 mb-6">This is where the test selection form will go.</p>
-            <button 
-              onClick={() => setIsModalOpen(false)}
-              className="px-4 py-2 bg-gray-100 text-gray-700 rounded-lg hover:bg-gray-200 font-semibold w-full"
-            >
-              Close
-            </button>
-          </div>
-        </div>
-      )}
     </div>
   );
 };

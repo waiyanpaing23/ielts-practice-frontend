@@ -6,3 +6,15 @@ body {
   min-height: 100vh;
   background-color: #f5f7fa;
 }
+
+/* Removes Quill's default ugly borders so our Tailwind wrapper handles it */
+.ql-toolbar.ql-snow {
+  border: none !important;
+  border-bottom: 1px solid #e5e7eb !important; /* Tailwind gray-200 */
+  background-color: #f9fafb; /* Tailwind gray-50 */
+}
+.ql-container.ql-snow {
+  border: none !important;
+  font-family: inherit !important;
+  font-size: 1rem !important;
+}

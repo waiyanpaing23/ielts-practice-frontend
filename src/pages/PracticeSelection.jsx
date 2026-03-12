@@ -85,12 +85,12 @@ const PracticeSelection = () => {
                                     Full Test
                                 </h3>
                                 <p className="text-gray-600">
-                                    Complete IELTS test with all four sections
+                                    Complete IELTS Reading test with all three sections
                                 </p>
                             </div>
                             <div className="flex items-center space-x-2 text-sm text-gray-500">
                                 <FiClock className="w-4 h-4" />
-                                <span>~2 hours 45 minutes</span>
+                                <span>~1 hours </span>
                             </div>
                         </div>
                         {selectedMode === 'full-test' && (
@@ -261,7 +261,7 @@ const PracticeSelection = () => {
                         <div className="text-center mb-8">
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">Ready for the Full Test?</h2>
                             <p className="text-gray-600">
-                                This will take approximately 2 hours and 45 minutes. Make sure you have enough time.
+                                This will take approximately an hour. Make sure you have enough time.
                             </p>
                         </div>
                         <button className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] transition-all active:scale-95">
