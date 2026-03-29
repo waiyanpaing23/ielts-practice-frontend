@@ -1,14 +1,16 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { FaSpinner, FaArrowLeft } from 'react-icons/fa';
 import api from '../api/axios'; 
 
 const CreateRoom = () => {
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const preselectedTestId = searchParams.get('testId') || '';
   
   const [formData, setFormData] = useState({
     name: '',
-    testId: '',
+    testId: preselectedTestId,
     customTimeLimit: ''
   });
 
@@ -71,7 +73,7 @@ const CreateRoom = () => {
         onClick={() => navigate(-1)} 
         className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors font-medium mb-6"
       >
-        <FaArrowLeft className="w-4 h-4" /> Back to Dashboard
+        <FaArrowLeft className="w-4 h-4" /> Back
       </button>
 
       <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden">
@@ -90,20 +92,7 @@ const CreateRoom = () => {
           )}
 
           <form onSubmit={handleSubmit} className="space-y-6">
-            <div>
-              <label className="block text-sm font-semibold text-gray-700 mb-2">
-                Room Name <span className="text-gray-400 font-normal">(Optional)</span>
-              </label>
-              <input
-                type="text"
-                name="name"
-                value={formData.name}
-                onChange={handleChange}
-                placeholder="e.g., Monday Evening Batch"
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
-              />
-              {/* <p className="text-xs text-gray-500 mt-2">If left blank, a smart name will be generated automatically.</p> */}
-            </div>
+            
 
             <div>
               <label className="block text-sm font-semibold text-gray-700 mb-2">
@@ -115,7 +104,7 @@ const CreateRoom = () => {
                 onChange={handleChange}
                 required
                 disabled={isFetchingTests}
-                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white disabled:bg-gray-50"
+                className="w-full px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all bg-white disabled:bg-gray-50"
               >
                 <option value="">-- Choose a Practice Test --</option>
                 {tests.map(test => (
@@ -139,12 +128,27 @@ const CreateRoom = () => {
                   onChange={handleChange}
                   placeholder="Leave blank to use default"
                   min="1"
-                  className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+                  className="w-full px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
                 />
                 <span className="absolute right-4 top-1/2 -translate-y-1/2 text-gray-400 font-medium">
                   minutes
                 </span>
               </div>
+            </div>
+
+            <div>
+              <label className="block text-sm font-semibold text-gray-700 mb-2">
+                Room Name <span className="text-gray-400 font-normal">(Optional)</span>
+              </label>
+              <input
+                type="text"
+                name="name"
+                value={formData.name}
+                onChange={handleChange}
+                placeholder="e.g., Monday Evening Batch"
+                className="w-full px-4 py-3 rounded-xl bg-gray-100 border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 outline-none transition-all"
+              />
+              {/* <p className="text-xs text-gray-500 mt-2">If left blank, a smart name will be generated automatically.</p> */}
             </div>
 
             <div className="pt-6 mt-6 border-t border-gray-100 flex gap-4">

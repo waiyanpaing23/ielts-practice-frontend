@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { Link } from 'react-router-dom'
+import { Link, useNavigate } from 'react-router-dom'
 import {
     FiClock,
     FiBook,
@@ -9,6 +9,8 @@ import {
 } from 'react-icons/fi'
 
 const PracticeSelection = () => {
+    const navigate = useNavigate()
+
     const [selectedMode, setSelectedMode] = useState('full-test')
     const [practiceOptions, setPracticeOptions] = useState({
         difficulty: 'medium',
@@ -259,13 +261,16 @@ const PracticeSelection = () => {
                 {selectedMode === 'full-test' && (
                     <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
                         <div className="text-center mb-8">
-                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Ready for the Full Test?</h2>
+                            <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose a Full Mock Exam</h2>
                             <p className="text-gray-600">
-                                This will take approximately an hour. Make sure you have enough time.
+                                Browse our library of full-length IELTS reading tests to simulate the real exam experience.
                             </p>
                         </div>
-                        <button className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] transition-all active:scale-95">
-                            Start Full Test
+                        <button
+                            onClick={() => navigate('/learner/library')}
+                            className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2"
+                        >
+                            <FiBook className="w-5 h-5" /> Browse Test Library
                         </button>
                     </div>
                 )}

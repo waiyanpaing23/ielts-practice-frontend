@@ -8,6 +8,7 @@ const Signup = () => {
   const navigate = useNavigate();
 
   const [formData, setFormData] = useState({
+    fullName: '',
     email: '',
     password: '',
     role: 'learner'
@@ -151,6 +152,23 @@ const Signup = () => {
                   )}
                 </button>
               </div>
+            </div>
+
+            <div>
+              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+                Full Name
+              </label>
+              <input
+                id="fullName"
+                name="fullName"
+                type="text"
+                autoComplete="name"
+                
+                value={formData.fullName}
+                onChange={handleChange}
+                className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none text-gray-900 placeholder-gray-400"
+                placeholder="Enter Your Name"
+              />
             </div>
 
             <div>

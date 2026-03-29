@@ -100,7 +100,7 @@ const ReadingSetDetail = () => {
         </button>
         <div className="flex items-center gap-3">
           <button
-            onClick={() => navigate(`/admin/reading-set/edit/${readingSet._id}`)}
+            onClick={() => navigate(`/reading-set/edit/${readingSet._id}`)}
             className="flex items-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-colors"
           >
             <FaEdit className="w-4 h-4" />

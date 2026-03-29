@@ -45,7 +45,7 @@ const ViewTests = () => {
           <p className="text-gray-500 mt-1">Manage and view your compiled IELTS reading exams.</p>
         </div>
         <Link 
-          to="/admin/test/create" 
+          to="/test/create" 
           className="bg-indigo-600 text-white px-5 py-3 rounded-xl font-bold hover:bg-indigo-700 transition-colors flex items-center gap-2 shadow-sm"
         >
           <FaPlus /> Compile New Test
@@ -71,7 +71,7 @@ const ViewTests = () => {
             </div>
             <h3 className="text-lg font-bold text-gray-900 mb-1">No Tests Found</h3>
             <p className="text-gray-500 mb-6">You haven't compiled any IELTS tests yet.</p>
-            <Link to="/admin/test/create" className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">
+            <Link to="/test/create" className="text-indigo-600 font-bold hover:text-indigo-800 transition-colors">
               Get started by compiling your first test &rarr;
             </Link>
           </div>

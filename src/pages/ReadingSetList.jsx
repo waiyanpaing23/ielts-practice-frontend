@@ -71,7 +71,7 @@ const ReadingSetList = () => {
           <p className="text-gray-500 mt-1">Manage your IELTS reading passages and questions</p>
         </div>
         <Link
-          to="/admin/reading-set/create"
+          to="/reading-set/create"
           className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] active:scale-95 transition-all"
         >
           <FaPlus className="w-4 h-4" />
@@ -95,7 +95,7 @@ const ReadingSetList = () => {
           <h3 className="text-xl font-bold text-gray-700 mb-2">No Reading Sets Yet</h3>
           <p className="text-gray-500 mb-6">Create your first reading set to get started</p>
           <Link
-            to="/admin/reading-set/create"
+            to="/reading-set/create"
             className="flex items-center justify-center gap-2 px-6 py-3 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] active:scale-95 transition-all"
           >
             <FaPlus className="w-4 h-4" />
@@ -107,7 +107,7 @@ const ReadingSetList = () => {
           {readingSets.map((set) => (
             <Link
               key={set._id}
-              to={`/admin/reading-set/${set._id}`}
+              to={`/reading-set/${set._id}`}
               className="bg-white rounded-2xl shadow-sm border border-gray-200 hover:shadow-md hover:border-indigo-200 transition-all overflow-hidden group block"
             >
               <div className="p-6">
@@ -145,7 +145,7 @@ const ReadingSetList = () => {
                     }}
                   >
                     <Link
-                      to={`/admin/reading-set/edit/${set._id}`}
+                      to={`/reading-set/edit/${set._id}`}
                       className="flex items-center justify-center gap-2 px-4 py-2 bg-indigo-50 text-indigo-700 rounded-xl font-bold hover:bg-indigo-100 transition-colors"
                     >
                       <FaEdit className="w-4 h-4" />

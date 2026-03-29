@@ -31,13 +31,13 @@ const AdminDashboard = () => {
           
           <div className="flex flex-col xl:flex-row gap-4 mt-auto">
             <Link 
-              to="/admin/create-reading" 
+              to="/reading-set/create" 
               className="flex-1 flex items-center justify-center gap-2 bg-indigo-50 text-indigo-700 px-4 py-3.5 rounded-xl font-bold hover:bg-indigo-100 transition-colors"
             >
               <FaPlus /> Create Passage
             </Link>
             <Link 
-              to="/admin/reading-sets" 
+              to="/reading-sets" 
               className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-100 text-gray-700 px-4 py-3.5 rounded-xl font-bold hover:border-indigo-600 hover:text-indigo-600 transition-colors"
             >
               View Passages <FaArrowRight />
@@ -61,13 +61,13 @@ const AdminDashboard = () => {
           
           <div className="flex flex-col xl:flex-row gap-4 mt-auto">
             <Link 
-              to="/admin/create-test" 
+              to="/test/create" 
               className="flex-1 flex items-center justify-center gap-2 bg-purple-50 text-purple-700 px-4 py-3.5 rounded-xl font-bold hover:bg-purple-100 transition-colors"
             >
               <FaPlus /> Compile Test
             </Link>
             <Link 
-              to="/admin/tests" 
+              to="/tests" 
               className="flex-1 flex items-center justify-center gap-2 border-2 border-gray-100 text-gray-700 px-4 py-3.5 rounded-xl font-bold hover:border-purple-600 hover:text-purple-600 transition-colors"
             >
               View Tests <FaArrowRight />
