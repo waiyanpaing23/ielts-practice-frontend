@@ -7,6 +7,8 @@ import api from '../api/axios';
 const TutorDashboard = () => {
   const navigate = useNavigate();
   const [rooms, setRooms] = useState([]);
+
+  const [stats, setStats] = useState({ totalUniqueStudents: 0, activeRoomsCount: 0, totalSessions: 0 });
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
@@ -15,6 +17,10 @@ const TutorDashboard = () => {
         const response = await api.get('/rooms');
         if (response.data.success) {
           setRooms(response.data.data);
+
+          if (response.data.stats) {
+            setStats(response.data.stats);
+          }
         }
       } catch (error) {
         console.error("Failed to fetch dashboard data", error);
@@ -25,11 +31,6 @@ const TutorDashboard = () => {
 
     fetchDashboardData();
   }, []);
-
-  // Calculate live stats
-  const activeRoomsCount = rooms.filter(room => room.status === 'waiting' || room.status === 'in_progress').length;
-  // Total students ever joined across all rooms
-  const totalStudentsCount = rooms.reduce((total, room) => total + (room.participants?.length || 0), 0);
 
   return (
     <div className="space-y-8 relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
@@ -70,17 +71,17 @@ const TutorDashboard = () => {
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-center">
           <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Active Rooms</h3>
           <div className="flex items-end gap-3">
-            <p className="text-4xl font-black text-indigo-600">{isLoading ? '-' : activeRoomsCount}</p>
-            {activeRoomsCount > 0 && <span className="flex h-3 w-3 relative mb-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>}
+            <p className="text-4xl font-black text-indigo-600">{isLoading ? '-' : stats.activeRoomsCount}</p>
+            {stats.activeRoomsCount > 0 && <span className="flex h-3 w-3 relative mb-2"><span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span><span className="relative inline-flex rounded-full h-3 w-3 bg-green-500"></span></span>}
           </div>
         </div>
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-center">
           <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Total Students</h3>
-          <p className="text-4xl font-black text-gray-900">{isLoading ? '-' : totalStudentsCount}</p>
+          <p className="text-4xl font-black text-gray-900">{isLoading ? '-' : stats.totalUniqueStudents}</p>
         </div>
         <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-100 flex flex-col justify-center">
           <h3 className="text-gray-500 text-sm font-bold uppercase tracking-wider mb-2">Total Sessions</h3>
-          <p className="text-4xl font-black text-gray-900">{isLoading ? '-' : rooms.length}</p>
+          <p className="text-4xl font-black text-gray-900">{isLoading ? '-' : stats.totalSessions}</p>
         </div>
       </div>
 

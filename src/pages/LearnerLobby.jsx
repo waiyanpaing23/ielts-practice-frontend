@@ -13,8 +13,6 @@ const LearnerLobby = () => {
   const [error, setError] = useState('');
 
   useEffect(() => {
-    // For now, we fetch the room data to display the test info.
-    // Soon, we will add Socket.io or polling here to listen for the "Start" signal!
     const fetchRoomData = async () => {
       try {
         const guestId = localStorage.getItem('guestId')
@@ -24,9 +22,19 @@ const LearnerLobby = () => {
             'x-guest-id': guestId || '' // Send the guest ID if they have one
           }
         });
+
+        const roomData = response.data.data;
+
+        if (roomData.status === 'in_progress') {
+          console.log("Exam already in progress! Bypassing lobby...");
+          navigate(`/learner/assessment/${roomId}`);
+          return;
+        }
+
         setRoom(response.data.data);
+
         socket.connect();
-        socket.emit('join_room', roomId);
+        socket.emit('join-room', roomId);
 
       } catch (err) {
         setError('Lost connection to the room. Please try joining again.');
@@ -36,7 +44,17 @@ const LearnerLobby = () => {
     };
 
     fetchRoomData();
+
+    const handleAssessmentStarted = () => {
+      console.log("Assessment started by tutor! Teleporting...");
+      navigate(`/learner/assessment/${roomId}`);
+    };
+
+    socket.on('assessment-started', handleAssessmentStarted);
+
+    // 3. Cleanup on unmount
     return () => {
+      socket.off('assessment-started', handleAssessmentStarted);
       socket.disconnect();
     };
     

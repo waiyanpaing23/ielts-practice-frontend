@@ -22,6 +22,7 @@ import LearnerLobby from './pages/LearnerLobby'
 import EditProfile from './pages/EditProfile'
 import LearnerTestLibrary from './pages/LearnerTestLibrary'
 import { FaUserClock, FaArrowRight } from 'react-icons/fa';
+import LiveAssessment from './pages/learner/LiveAssessment'
 
 // Home Page Component
 const Home = () => {
@@ -106,6 +107,7 @@ function App() {
       <Routes>
         <Route path="/signin" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
+        <Route path="/learner/assessment/:roomId" element={<LiveAssessment />} />
 
         <Route element={<MainLayout />}>
           
