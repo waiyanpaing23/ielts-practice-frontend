@@ -138,7 +138,8 @@ const TutorLiveRoom = () => {
 
   const handleEndAssessment = async () => {
     if (window.confirm("Are you sure you want to FORCE END this assessment? All student sessions will be terminated.")) {
-      alert("End Assessment API call goes here.");
+      await api.post(`/rooms/${roomId}/end`);
+      navigate(`/tutor/room/${roomId}/results`);
     }
   };
 

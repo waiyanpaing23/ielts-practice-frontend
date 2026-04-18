@@ -36,6 +36,9 @@ const Login = () => {
 
       if (response.data.success) {
         const { token, user } = response.data.data;
+
+        localStorage.removeItem('guestId');
+        sessionStorage.removeItem('guestId');
         
         if (formData.rememberMe) {
           localStorage.setItem('token', token);

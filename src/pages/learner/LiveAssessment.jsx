@@ -16,6 +16,21 @@ const LiveAssessment = () => {
   
   const [activeSetIndex, setActiveSetIndex] = useState(0);
 
+  const getStudentId = () => {
+    // 1. Check for a logged-in user (in either local or session storage)
+    const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
+    if (userStr) {
+      try {
+        const userObj = JSON.parse(userStr);
+        return userObj._id || userObj.id || 'unknown';
+      } catch (e) {
+        console.error("Failed to parse user data");
+      }
+    }
+    // 2. Fallback to Guest ID
+    return localStorage.getItem('guestId') || 'unknown';
+  };
+
   useEffect(() => {
     if (!socket.connected) socket.connect();
     socket.emit('join-room', roomId);
@@ -109,7 +124,7 @@ const LiveAssessment = () => {
       // Backup instantly to browser storage
       localStorage.setItem(`answers_${roomId}`, JSON.stringify(newAnswers));
 
-      const studentId = localStorage.getItem('guestId') || localStorage.getItem('userId') || 'unknown';
+      const studentId = getStudentId();
       const answeredCount = Object.keys(newAnswers).length;
 
       socket.emit('student-progress-update', {
@@ -127,7 +142,7 @@ const LiveAssessment = () => {
   const handleTabChange = (index) => {
     setActiveSetIndex(index);
     
-    const studentId = localStorage.getItem('guestId') || localStorage.getItem('userId') || 'unknown';
+    const studentId = getStudentId();
     
     socket.emit('student-progress-update', {
       roomId,
@@ -159,33 +174,50 @@ const LiveAssessment = () => {
     try {
       setIsLoading(true);
       
-      const studentId = localStorage.getItem('guestId') || localStorage.getItem('userId');
+      const studentId = getStudentId();
+      
+      const currentAnswers = JSON.parse(localStorage.getItem(`answers_${roomId}`)) || answers;
       
       // 1. Send the answers to your new grading engine
       const response = await api.post(`/rooms/${roomId}/submit`, {
-        answers: answers,
+        answers: currentAnswers,
         studentId: studentId
       });
 
       if (response.data.success) {
         console.log(`Scored: ${response.data.data.score}%`);
         
-        // 2. Clean up the browser storage so they start fresh next time
+        // Clean up browser storage
         localStorage.removeItem('activeRoomId');
         localStorage.removeItem(`answers_${roomId}`);
         localStorage.removeItem(`endTime_${roomId}`);
-        
-        // 3. Save the score to display on the next page (optional)
-        sessionStorage.setItem('lastScore', JSON.stringify(response.data.data));
 
-        // 4. Navigate to the final results screen!
-        navigate('/learner/scores'); 
+        const attemptId = response.data.data.attemptId;
+        navigate(`/learner/assessment/result/${attemptId}`);
       }
     } catch (error) {
       console.error("Failed to submit exam:", error);
       alert("There was an error saving your exam. Please do not close the window, and contact your tutor.");
+      setIsLoading(false);
     }
   };
+
+
+  useEffect(() => {
+    if (!socket) return;
+
+    const handleRoomEnded = () => {
+      alert("The tutor has ended the assessment. Submitting your current answers...");
+      submitExam(); 
+    };
+
+    socket.on('room-ended', handleRoomEnded);
+
+    return () => {
+      socket.off('room-ended', handleRoomEnded);
+    };
+  }, [roomId, navigate]);
+
 
   if (isLoading || !testData) {
     return (

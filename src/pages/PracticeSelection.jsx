@@ -12,27 +12,18 @@ const PracticeSelection = () => {
     const navigate = useNavigate()
 
     const [selectedMode, setSelectedMode] = useState('full-test')
+    
     const [practiceOptions, setPracticeOptions] = useState({
         difficulty: 'medium',
-        topic: 'all',
         timeLimit: true
     })
 
+    // 👇 UPDATED: Simple, beginner-friendly labels with accurate IELTS context in the description
     const difficulties = [
-        { id: 'easy', label: 'Easy', description: 'Perfect for beginners', color: 'green' },
-        { id: 'medium', label: 'Medium', description: 'Balanced challenge', color: 'blue' },
-        { id: 'hard', label: 'Hard', description: 'For advanced learners', color: 'red' }
+        { id: 'easy', label: 'Easy', description: 'Factual & Descriptive (Passage 1 level)', color: 'green' },
+        { id: 'medium', label: 'Medium', description: 'Discursive & Complex (Passage 2 level)', color: 'blue' },
+        { id: 'hard', label: 'Hard', description: 'Academic & Abstract (Passage 3 level)', color: 'red' }
     ]
-
-    const topics = [
-        { id: 'all', label: 'All Topics' },
-        { id: 'tech', label: 'Technology & Science' },
-        { id: 'history', label: 'History & Culture' },
-        { id: 'edu', label: 'Education' },
-        { id: 'env', label: 'Environment & Nature' },
-        { id: 'health', label: 'Health & Fitness' },
-        { id: 'society', label: 'Social Issues' }
-    ];
 
     const handleModeSelect = (mode) => {
         setSelectedMode(mode)
@@ -42,12 +33,12 @@ const PracticeSelection = () => {
         setPracticeOptions(prev => ({ ...prev, difficulty }))
     }
 
-    const handleTopicChange = (topic) => {
-        setPracticeOptions(prev => ({ ...prev, topic }))
-    }
-
     const toggleTimeLimit = () => {
         setPracticeOptions(prev => ({ ...prev, timeLimit: !prev.timeLimit }))
+    }
+
+    const handleStartMiniPractice = () => {
+        navigate(`/learner/mini-practice?difficulty=${practiceOptions.difficulty}&timed=${practiceOptions.timeLimit}`);
     }
 
     return (
@@ -92,7 +83,7 @@ const PracticeSelection = () => {
                             </div>
                             <div className="flex items-center space-x-2 text-sm text-gray-500">
                                 <FiClock className="w-4 h-4" />
-                                <span>~1 hours </span>
+                                <span>60 minutes</span>
                             </div>
                         </div>
                         {selectedMode === 'full-test' && (
@@ -125,15 +116,16 @@ const PracticeSelection = () => {
                             <div>
                                 <h3 className={`text-2xl font-bold mb-2 ${selectedMode === 'practice' ? 'text-indigo-700' : 'text-gray-900'
                                     }`}>
-                                    Practice
+                                    Mini Practice
                                 </h3>
                                 <p className="text-gray-600">
-                                    Focused practice on specific skills with customizable options
+                                    A quick 20-minute drill on a single reading passage.
                                 </p>
                             </div>
                             <div className="flex items-center space-x-2 text-sm text-gray-500">
                                 <FiZap className="w-4 h-4" />
-                                <span>Flexible duration</span>
+                                {/* 👇 UPDATED: Changed to "1 Complete Passage" to avoid confusing question counts */}
+                                <span>1 Complete Passage</span>
                             </div>
                         </div>
                         {selectedMode === 'practice' && (
@@ -150,15 +142,15 @@ const PracticeSelection = () => {
 
                 {/* Practice Options Section */}
                 {selectedMode === 'practice' && (
-                    <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
+                    <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100 animate-fade-in-up">
                         <h2 className="text-2xl font-bold text-gray-900 mb-8">Customize Your Practice</h2>
 
                         {/* Difficulty Selection */}
                         <div className="mb-8">
                             <label className="block text-sm font-semibold text-gray-700 mb-4">
-                                Difficulty Level
+                                Passage Difficulty
                             </label>
-                            <div className="grid grid-cols-3 gap-4">
+                            <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                                 {difficulties.map((difficulty) => (
                                     <button
                                         key={difficulty.id}
@@ -175,7 +167,7 @@ const PracticeSelection = () => {
                                                 }`}>
                                                 {difficulty.label}
                                             </div>
-                                            <div className="text-xs text-gray-500">
+                                            <div className="text-xs text-gray-700">
                                                 {difficulty.description}
                                             </div>
                                         </div>
@@ -184,37 +176,10 @@ const PracticeSelection = () => {
                             </div>
                         </div>
 
-                        {/* Topic Selection */}
-                        <div className="mb-8">
-                            <label className="block text-sm font-semibold text-gray-700 mb-2">
-                                Select Subject Theme
-                            </label>
-                            <div className="relative">
-                                <select
-                                    value={practiceOptions.topic}
-                                    onChange={(e) => handleTopicChange(e.target.value)}
-                                    className="w-full p-4 pl-5 pr-10 text-gray-700 bg-white border border-gray-200 rounded-xl appearance-none focus:ring-2 focus:ring-indigo-500 focus:border-indigo-500 outline-none transition-all cursor-pointer shadow-sm hover:border-gray-300"
-                                >
-                                    {topics.map((topic) => (
-                                        <option key={topic.id} value={topic.id}>
-                                            {topic.label}
-                                        </option>
-                                    ))}
-                                </select>
-
-                                {/* Custom Dropdown Arrow Icon */}
-                                <div className="absolute inset-y-0 right-0 flex items-center px-4 pointer-events-none text-gray-400">
-                                    <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 9l-7 7-7-7" />
-                                    </svg>
-                                </div>
-                            </div>
-                        </div>
-
                         {/* Time Limit Toggle */}
                         <div className="mb-8">
                             <label className="block text-sm font-semibold text-gray-700 mb-4">
-                                Time Limit
+                                Exam Simulation
                             </label>
                             <button
                                 onClick={toggleTimeLimit}
@@ -232,34 +197,37 @@ const PracticeSelection = () => {
                                     <div className="text-left">
                                         <div className={`font-semibold ${practiceOptions.timeLimit ? 'text-indigo-700' : 'text-gray-700'
                                             }`}>
-                                            {practiceOptions.timeLimit ? 'Time Limit Enabled' : 'No Time Limit'}
+                                            {practiceOptions.timeLimit ? 'Strict Time Limit (Recommended)' : 'Relaxed Mode'}
                                         </div>
                                         <div className="text-sm text-gray-500">
                                             {practiceOptions.timeLimit
-                                                ? 'Complete questions within the allotted time'
-                                                : 'Practice at your own pace'}
+                                                ? 'Passage will auto-submit after 20 minutes.'
+                                                : 'Practice at your own pace.'}
                                         </div>
                                     </div>
                                 </div>
                                 {practiceOptions.timeLimit && (
-                                    <div className="flex items-center space-x-2 text-indigo-600">
-                                        <FiClock className="w-5 h-5" />
-                                        <span className="font-semibold">30 min</span>
+                                    <div className="hidden sm:flex items-center space-x-2 text-indigo-600 bg-white px-3 py-1 rounded-md border border-indigo-100 shadow-sm">
+                                        <FiClock className="w-4 h-4" />
+                                        <span className="font-bold">20 min</span>
                                     </div>
                                 )}
                             </button>
                         </div>
 
                         {/* Start Practice Button */}
-                        <button className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] transition-all active:scale-95">
-                            Start Practice
+                        <button 
+                            onClick={handleStartMiniPractice}
+                            className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] transition-all active:scale-95"
+                        >
+                            Start Mini Practice
                         </button>
                     </div>
                 )}
 
                 {/* Full Test Start Button */}
                 {selectedMode === 'full-test' && (
-                    <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100">
+                    <div className="bg-white rounded-2xl shadow-xl shadow-gray-200/50 p-8 border border-gray-100 animate-fade-in-up">
                         <div className="text-center mb-8">
                             <h2 className="text-2xl font-bold text-gray-900 mb-2">Choose a Full Mock Exam</h2>
                             <p className="text-gray-600">
@@ -279,10 +247,10 @@ const PracticeSelection = () => {
                 <div className="mt-8 text-center">
                     <Link
                         to="/"
-                        className="inline-flex items-center text-gray-600 hover:text-gray-900 transition-colors"
+                        className="inline-flex items-center font-bold text-gray-500 hover:text-indigo-600 transition-colors uppercase tracking-wider text-sm"
                     >
                         <span className="mr-2">←</span>
-                        Back to Home
+                        Back to Dashboard
                     </Link>
                 </div>
             </div>

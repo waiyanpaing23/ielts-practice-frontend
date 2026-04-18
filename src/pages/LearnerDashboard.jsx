@@ -15,16 +15,15 @@ import api from '../api/axios';
 const LearnerDashboard = () => {
   const navigate = useNavigate();
   const [user, setUser] = useState(null);
-  const [joinedRooms, setJoinedRooms] = useState([]); // 👈 NEW: State for rooms
+  const [joinedRooms, setJoinedRooms] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
 
   useEffect(() => {
     const fetchDashboardData = async () => {
       try {
-        // 👈 NEW: Fetch both Profile AND Joined Rooms at the same time
         const [profileRes, roomsRes] = await Promise.all([
           api.get('/users/profile'),
-          api.get('/rooms/joined') // We will need to build this backend route!
+          api.get('/rooms/joined') 
         ]);
         
         if (profileRes.data.success) {
@@ -78,7 +77,7 @@ const LearnerDashboard = () => {
         </Link>
       </div>
 
-      {/* Main Action Cards Grid (Unchanged) */}
+      {/* Main Action Cards Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <div className="md:col-span-3 lg:col-span-1">
           <div className="bg-gradient-to-br from-indigo-600 via-indigo-700 to-purple-800 rounded-3xl p-8 h-full flex flex-col justify-between text-white shadow-lg shadow-indigo-200 hover:-translate-y-1 transition-transform duration-300">
@@ -139,7 +138,7 @@ const LearnerDashboard = () => {
         </div>
       </div>
 
-      {/* 👇 NEW: Dynamic Active Rooms Section */}
+      {/* Dynamic Active Rooms Section */}
       <div className="bg-white rounded-3xl shadow-sm border border-gray-100 p-8">
         <div className="flex items-center gap-3 mb-6">
           <FaHistory className="text-gray-400 w-5 h-5" />
@@ -160,17 +159,41 @@ const LearnerDashboard = () => {
                     <span className="px-2 py-1 bg-indigo-100 text-indigo-700 rounded-md text-xs font-bold uppercase tracking-wider">
                       {room.code}
                     </span>
-                    <span className={`w-2.5 h-2.5 rounded-full ${room.status === 'in_progress' ? 'bg-red-500 animate-pulse' : 'bg-green-500'}`}></span>
+                    
+                    {/* 👇 UPDATED: Replaced colored dots with Explicit Text Badges */}
+                    <span className={`px-2 py-1 text-[10px] font-bold uppercase tracking-wider rounded-md ${
+                      room.status === 'completed' ? 'bg-gray-200 text-gray-600' :
+                      room.status === 'in_progress' ? 'bg-red-100 text-red-700 animate-pulse' :
+                      'bg-green-100 text-green-700'
+                    }`}>
+                      {room.status.replace('_', ' ')}
+                    </span>
                   </div>
-                  <h3 className="font-bold text-gray-900 truncate">{room.name}</h3>
+                  <h3 className="font-bold text-gray-900 truncate mt-2">{room.name}</h3>
                   <p className="text-sm text-gray-500 mt-1">{room.test?.title || 'Assessment'}</p>
                 </div>
                 
+                {/* 👇 UPDATED: Smart Button Routing and Styling */}
                 <button 
-                  onClick={() => navigate(`/learner/lobby/${room._id}`)}
-                  className="mt-5 w-full py-2 bg-white border border-gray-200 rounded-xl text-indigo-600 font-bold text-sm hover:bg-indigo-50 transition-colors flex justify-center items-center gap-2"
+                  onClick={() => {
+                    if (room.status === 'completed') {
+                      // Route to the exact result if the backend sends the attempt ID, otherwise route to the history list
+                      if (room.attemptId) {
+                        navigate(`/learner/assessment/result/${room.attemptId}`);
+                      } else {
+                        navigate('/learner/scores'); 
+                      }
+                    } else {
+                      navigate(`/learner/lobby/${room._id}`);
+                    }
+                  }}
+                  className={`mt-5 w-full py-2 border rounded-xl font-bold text-sm transition-colors flex justify-center items-center gap-2 ${
+                    room.status === 'completed' 
+                      ? 'bg-white border-gray-300 text-gray-600 hover:bg-gray-100' 
+                      : 'bg-white border-gray-200 text-indigo-600 hover:bg-indigo-50'
+                  }`}
                 >
-                  Rejoin Room <FaArrowRight className="w-3 h-3" />
+                  {room.status === 'completed' ? 'View Results' : 'Rejoin Room'} <FaArrowRight className="w-3 h-3" />
                 </button>
               </div>
             ))}

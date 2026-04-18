@@ -18,3 +18,12 @@ body {
   font-family: inherit !important;
   font-size: 1rem !important;
 }
+
+@theme {
+  --animate-slide-in-right: slide-in-right 0.3s ease-out forwards;
+}
+
+@keyframes slide-in-right {
+  0% { transform: translateX(100%); }
+  100% { transform: translateX(0); }
+}

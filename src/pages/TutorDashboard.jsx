@@ -111,7 +111,14 @@ const TutorDashboard = () => {
             {rooms.map((room) => (
               <div 
                 key={room._id} 
-                onClick={() => navigate(`/tutor/live/${room._id}`)}
+                onClick={() => {
+                  if (room.status === 'completed') {
+                    // If the room is finished, send them to the Results page
+                    navigate(`/tutor/room/${room._id}/results`); 
+                  } else {
+                    navigate(`/tutor/live/${room._id}`);
+                  }
+                }}
                 className="group border border-gray-200 rounded-2xl p-5 hover:border-indigo-200 hover:shadow-md transition-all cursor-pointer bg-white flex items-center justify-between gap-4"
               >
                 {/* Left Side: Room Info & Student Count */}

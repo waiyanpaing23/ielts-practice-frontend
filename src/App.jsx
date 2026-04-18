@@ -23,6 +23,10 @@ import EditProfile from './pages/EditProfile'
 import LearnerTestLibrary from './pages/LearnerTestLibrary'
 import { FaUserClock, FaArrowRight } from 'react-icons/fa';
 import LiveAssessment from './pages/learner/LiveAssessment'
+import LearnerResult from './pages/learner/LearnerResult'
+import TutorLeaderboard from './pages/tutor/TutorLeaderboard'
+import LearnerScores from './pages/learner/LearnerScores'
+import MiniPractice from './pages/learner/MiniPractice'
 
 // Home Page Component
 const Home = () => {
@@ -108,6 +112,7 @@ function App() {
         <Route path="/signin" element={<Login />} />
         <Route path="/signup" element={<Signup />} />
         <Route path="/learner/assessment/:roomId" element={<LiveAssessment />} />
+        <Route path="/learner/mini-practice" element={<MiniPractice />} />
 
         <Route element={<MainLayout />}>
           
@@ -115,16 +120,19 @@ function App() {
           <Route path="/practice" element={<PracticeSelection />} />
           <Route path="/join-room" element={<JoinRoom />} />
           <Route path="/learner/lobby/:roomId" element={<LearnerLobby />} />
+          <Route path="/learner/assessment/result/:attemptId" element={<LearnerResult />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<LearnerDashboard />} />
             <Route path="/learner/library" element={<LearnerTestLibrary />} />
             <Route path="/profile" element={<EditProfile />} />
+            <Route path="/learner/scores" element={<LearnerScores />} />
 
             <Route path="/tutor" element={<TutorDashboard />} />
             <Route path="/tutor/create-room" element={<CreateRoom />} />
             <Route path="/tutor/live/:roomId" element={<TutorLiveRoom />} />
             <Route path="/tutor/library" element={<TestLibrary />} />
+            <Route path="/tutor/room/:roomId/results" element={<TutorLeaderboard />} />
 
             <Route path="/admin" element={<AdminDashboard />} />
             <Route path="/reading-sets" element={<ReadingSetList />} />
