@@ -79,11 +79,17 @@ const TutorLiveRoom = () => {
         setRoomData(room);
         setStudents(room.participants || []);
 
-        if (room.status === 'in_progress' && room.startTime) {
+        if (room.status === 'in_progress') {
           const timeLimit = room.customTimeLimit || room.test?.timeLimit || 60;
-          const endTime = new Date(room.startTime).getTime() + (timeLimit * 60 * 1000);
-          const remainingSeconds = Math.floor((endTime - Date.now()) / 1000);
-          setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
+          
+          if (room.startedAt) {
+            const endTime = new Date(room.startedAt).getTime() + (timeLimit * 60 * 1000);
+            const remainingSeconds = Math.floor((endTime - Date.now()) / 1000);
+            setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
+          } else {
+            // 👇 FIX: Failsafe in case backend doesn't return startedAt immediately
+            setTimeLeft(timeLimit * 60);
+          }
         }
       }
     } catch (error) {
@@ -100,20 +106,23 @@ const TutorLiveRoom = () => {
   }, [roomId]);
 
   useEffect(() => {
-    if (roomData?.status !== 'in_progress' || timeLeft <= 0) return;
+    // 👇 FIX: Only rely on the room status. Let the interval handle the math internally!
+    if (roomData?.status !== 'in_progress') return;
 
     const timerId = setInterval(() => {
       setTimeLeft(prev => {
         if (prev <= 1) {
           clearInterval(timerId);
-          return 0;
+          // Optional: You could trigger an auto-end here for the tutor if you wanted
+          return 0; 
         }
         return prev - 1;
       });
     }, 1000);
 
     return () => clearInterval(timerId);
-  }, [timeLeft, roomData?.status]);
+    // 👇 FIX: Removed timeLeft from this array so the timer doesn't destroy itself every second
+  }, [roomData?.status]);
 
   const handleStartAssessment = async () => {
     if (students.length === 0) {

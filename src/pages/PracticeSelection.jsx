@@ -7,9 +7,12 @@ import {
     FiToggleLeft,
     FiToggleRight
 } from 'react-icons/fi'
+import api from '../api/axios'
+import { FaList, FaPlay, FaSpinner } from 'react-icons/fa'
 
 const PracticeSelection = () => {
     const navigate = useNavigate()
+    const [isStartingRandom, setIsStartingRandom] = useState(false);
 
     const [selectedMode, setSelectedMode] = useState('full-test')
     
@@ -40,6 +43,39 @@ const PracticeSelection = () => {
     const handleStartMiniPractice = () => {
         navigate(`/learner/mini-practice?difficulty=${practiceOptions.difficulty}&timed=${practiceOptions.timeLimit}`);
     }
+
+    const handleStartFullTest = async () => {
+    setIsStartingRandom(true);
+    try {
+      const token = localStorage.getItem('token') || sessionStorage.getItem('token');
+      const guestId = localStorage.getItem('guestId') || sessionStorage.getItem('guestId');
+
+      const response = await api.get('/tests/recommend-adaptive', {
+        headers: {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'x-guest-id': guestId || ''
+        }
+      });
+
+      if (response.data.success) {
+        // const publishedTests = response.data.data.filter(test => test.isPublic);
+        
+        // if (publishedTests.length > 0) {
+        //   const randomTest = publishedTests[Math.floor(Math.random() * publishedTests.length)];
+        //   navigate(`/learner/full-practice?testId=${randomTest._id}`);
+        // } else {
+        //   alert("No official tests are available right now. Please check back later.");
+        // }
+        const personalizedTestId = response.data.data.testId;
+        navigate(`/learner/full-practice?testId=${personalizedTestId}`);
+      }
+    } catch (err) {
+      console.error("Failed to fetch random test", err);
+      alert("Failed to connect to the server. Please check your internet connection.");
+    } finally {
+      setIsStartingRandom(false);
+    }
+  };
 
     return (
         <div className="min-h-screen bg-gradient-to-br from-gray-50 to-gray-100 py-12 px-4 sm:px-6 lg:px-8">
@@ -234,11 +270,22 @@ const PracticeSelection = () => {
                                 Browse our library of full-length IELTS reading tests to simulate the real exam experience.
                             </p>
                         </div>
-                        <button
-                            onClick={() => navigate('/learner/library')}
-                            className="w-full px-8 py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-xl shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] transition-all active:scale-95 flex items-center justify-center gap-2"
+                        <button 
+                            onClick={handleStartFullTest}
+                            disabled={isStartingRandom}
+                            className="w-full px-8 py-4 mb-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-lg shadow-indigo-200 hover:shadow-indigo-300 transition-all active:scale-95 flex items-center justify-center gap-2"
                         >
-                            <FiBook className="w-5 h-5" /> Browse Test Library
+                            {isStartingRandom ? (
+                            <><FaSpinner className="animate-spin" /> Finding a test...</>
+                            ) : (
+                            <><FaPlay className="text-sm" /> Start Full Test</>
+                            )}
+                        </button>
+                        <button 
+                            onClick={() => navigate('/learner/library')}
+                            className="w-full py-3.5 bg-white border-2 border-gray-200 hover:border-gray-300 hover:bg-gray-50 text-gray-700 font-bold rounded-xl transition-all flex items-center justify-center gap-2"
+                        >
+                            <FaList className="text-sm text-gray-400" /> Browse Test Library
                         </button>
                     </div>
                 )}

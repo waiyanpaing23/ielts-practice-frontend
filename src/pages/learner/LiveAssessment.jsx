@@ -1,23 +1,24 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { FaClock, FaCheckCircle, FaSpinner, FaExclamationTriangle, FaBookOpen } from 'react-icons/fa';
+import { FaClock, FaCheckCircle, FaSpinner, FaBookOpen } from 'react-icons/fa';
 import api from '../../api/axios';
 import socket from '../../api/socket';
+import QuestionRenderer from '../../components/QuestionRenderer';
 
 const LiveAssessment = () => {
   const { roomId } = useParams();
   const navigate = useNavigate();
 
+  // --- 1. STATE ---
   const [isLoading, setIsLoading] = useState(true);
   const [roomData, setRoomData] = useState(null);
   const [testData, setTestData] = useState(null);
   const [answers, setAnswers] = useState({});
   const [timeLeft, setTimeLeft] = useState(0);
-  
   const [activeSetIndex, setActiveSetIndex] = useState(0);
 
+  // --- 2. HELPER FUNCTIONS ---
   const getStudentId = () => {
-    // 1. Check for a logged-in user (in either local or session storage)
     const userStr = localStorage.getItem('user') || sessionStorage.getItem('user');
     if (userStr) {
       try {
@@ -27,17 +28,90 @@ const LiveAssessment = () => {
         console.error("Failed to parse user data");
       }
     }
-    // 2. Fallback to Guest ID
     return localStorage.getItem('guestId') || 'unknown';
   };
 
+  const formatTime = (seconds) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
+  };
+
+  // --- 3. ACTION & SUBMIT FUNCTIONS (Moved to the top!) ---
+  const submitExam = async () => {
+    try {
+      setIsLoading(true);
+      const studentId = getStudentId();
+      const currentAnswers = JSON.parse(localStorage.getItem(`answers_${roomId}`)) || answers;
+      
+      const response = await api.post(`/rooms/${roomId}/submit`, {
+        answers: currentAnswers,
+        studentId: studentId
+      });
+
+      if (response.data.success) {
+        // Clean up browser storage
+        localStorage.removeItem('activeRoomId');
+        localStorage.removeItem(`answers_${roomId}`);
+        localStorage.removeItem(`endTime_${roomId}`);
+
+        const attemptId = response.data.data.attemptId;
+        navigate(`/learner/assessment/result/${attemptId}`);
+      }
+    } catch (error) {
+      console.error("Failed to submit exam:", error);
+      alert("There was an error saving your exam. Please do not close the window, and contact your tutor.");
+      setIsLoading(false);
+    }
+  };
+
+  const handleAutoSubmit = () => {
+    alert("Time is up! Submitting your assessment.");
+    submitExam();
+  };
+
+  const handleManualSubmit = () => {
+    if (window.confirm("Are you sure you want to submit your assessment? You cannot change your answers after this.")) {
+      submitExam();
+    }
+  };
+
+  const handleAnswerChange = (questionId, value) => {
+    setAnswers(prev => {
+      const newAnswers = { ...prev, [questionId]: value };
+      localStorage.setItem(`answers_${roomId}`, JSON.stringify(newAnswers));
+
+      const studentId = getStudentId();
+      const answeredCount = Object.keys(newAnswers).length;
+
+      socket.emit('student-progress-update', {
+        roomId,
+        studentId,
+        answeredCount,
+        currentPart: activeSetIndex + 1
+      });
+
+      return newAnswers;
+    });
+  };
+
+  const handleTabChange = (index) => {
+    setActiveSetIndex(index);
+    const studentId = getStudentId();
+    
+    socket.emit('student-progress-update', {
+      roomId,
+      studentId,
+      answeredCount: Object.keys(answers).length,
+      currentPart: index + 1
+    });
+  };
+
+  // --- 4. USE EFFECTS (Hooks) ---
   useEffect(() => {
     if (!socket.connected) socket.connect();
     socket.emit('join-room', roomId);
-    
-    return () => {
-      //
-    };
+    return () => {};
   }, [roomId]);
 
   useEffect(() => {
@@ -75,19 +149,16 @@ const LiveAssessment = () => {
           setAnswers(JSON.parse(savedAnswers));
         }
 
-        // const savedEndTime = localStorage.getItem(`endTime_${roomId}`);
-        // if (savedEndTime) {
-        //   const remainingSeconds = Math.floor((parseInt(savedEndTime) - Date.now()) / 1000);
-        //   setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
-        // } else {
-        //   const timeToUse = room.customTimeLimit || room.test.timeLimit || 60;
-        //   const totalSeconds = timeToUse * 60;
-        //   setTimeLeft(totalSeconds);
-        //   localStorage.setItem(`endTime_${roomId}`, Date.now() + (totalSeconds * 1000));
-        // }
-        
-        const timeToUse = room.customTimeLimit || room.test.timeLimit || 60;
-        setTimeLeft(timeToUse * 60);
+        const savedEndTime = localStorage.getItem(`endTime_${roomId}`);
+        if (savedEndTime) {
+          const remainingSeconds = Math.floor((parseInt(savedEndTime) - Date.now()) / 1000);
+          setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
+        } else {
+          const timeToUse = room.customTimeLimit || room.test.timeLimit || 60;
+          const totalSeconds = timeToUse * 60;
+          setTimeLeft(totalSeconds);
+          localStorage.setItem(`endTime_${roomId}`, Date.now() + (totalSeconds * 1000));
+        }
         
         setIsLoading(false);
 
@@ -101,14 +172,13 @@ const LiveAssessment = () => {
     fetchExamData();
   }, [roomId, navigate]);
 
-
   useEffect(() => {
     if (timeLeft <= 0 || isLoading) return;
     const timerId = setInterval(() => {
       setTimeLeft((prev) => {
         if (prev <= 1) {
           clearInterval(timerId);
-          handleAutoSubmit();
+          handleAutoSubmit(); // Now perfectly safe to call!
           return 0;
         }
         return prev - 1;
@@ -117,108 +187,19 @@ const LiveAssessment = () => {
     return () => clearInterval(timerId);
   }, [timeLeft, isLoading]);
 
-
-  const handleAnswerChange = (questionId, value) => {
-    setAnswers(prev => {
-      const newAnswers = { ...prev, [questionId]: value };
-      // Backup instantly to browser storage
-      localStorage.setItem(`answers_${roomId}`, JSON.stringify(newAnswers));
-
-      const studentId = getStudentId();
-      const answeredCount = Object.keys(newAnswers).length;
-
-      socket.emit('student-progress-update', {
-        roomId,
-        studentId,
-        answeredCount,
-        currentPart: activeSetIndex + 1
-      });
-
-      return newAnswers;
-    });
-  };
-
-
-  const handleTabChange = (index) => {
-    setActiveSetIndex(index);
-    
-    const studentId = getStudentId();
-    
-    socket.emit('student-progress-update', {
-      roomId,
-      studentId,
-      answeredCount: Object.keys(answers).length,
-      currentPart: index + 1
-    });
-  };
-
-
-  const formatTime = (seconds) => {
-    const m = Math.floor(seconds / 60);
-    const s = seconds % 60;
-    return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
-  };
-
-  const handleAutoSubmit = () => {
-    alert("Time is up! Submitting your assessment.");
-    submitExam();
-  };
-
-  const handleManualSubmit = () => {
-    if (window.confirm("Are you sure you want to submit your assessment? You cannot change your answers after this.")) {
-      submitExam();
-    }
-  };
-
-  const submitExam = async () => {
-    try {
-      setIsLoading(true);
-      
-      const studentId = getStudentId();
-      
-      const currentAnswers = JSON.parse(localStorage.getItem(`answers_${roomId}`)) || answers;
-      
-      // 1. Send the answers to your new grading engine
-      const response = await api.post(`/rooms/${roomId}/submit`, {
-        answers: currentAnswers,
-        studentId: studentId
-      });
-
-      if (response.data.success) {
-        console.log(`Scored: ${response.data.data.score}%`);
-        
-        // Clean up browser storage
-        localStorage.removeItem('activeRoomId');
-        localStorage.removeItem(`answers_${roomId}`);
-        localStorage.removeItem(`endTime_${roomId}`);
-
-        const attemptId = response.data.data.attemptId;
-        navigate(`/learner/assessment/result/${attemptId}`);
-      }
-    } catch (error) {
-      console.error("Failed to submit exam:", error);
-      alert("There was an error saving your exam. Please do not close the window, and contact your tutor.");
-      setIsLoading(false);
-    }
-  };
-
-
   useEffect(() => {
     if (!socket) return;
-
     const handleRoomEnded = () => {
       alert("The tutor has ended the assessment. Submitting your current answers...");
-      submitExam(); 
+      submitExam(); // Now perfectly safe to call!
     };
-
     socket.on('room-ended', handleRoomEnded);
-
     return () => {
       socket.off('room-ended', handleRoomEnded);
     };
   }, [roomId, navigate]);
 
-
+  // --- 5. RENDER UI ---
   if (isLoading || !testData) {
     return (
       <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
@@ -229,64 +210,6 @@ const LiveAssessment = () => {
   }
 
   const activeSet = testData.reading_sets[activeSetIndex];
-
-  const renderQuestionInput = (q) => {
-    const type = q.question_type;
-
-    // 1. Radio Buttons (Multiple Choice, True/False, Yes/No)
-    if (['multiple_choice', 'true_false_not_given', 'yes_no_not_given'].includes(type)) {
-      return (
-        <div className="space-y-3">
-          {q.options?.map((opt, i) => (
-            <label key={i} className={`flex items-center gap-3 p-4 rounded-xl border cursor-pointer transition-all ${
-              answers[q._id] === opt 
-                ? 'border-indigo-600 bg-indigo-50 shadow-sm' 
-                : 'border-gray-200 hover:border-indigo-300 hover:bg-gray-50'
-            }`}>
-              <input 
-                type="radio" 
-                name={`question_${q._id}`} 
-                value={opt}
-                checked={answers[q._id] === opt}
-                onChange={(e) => handleAnswerChange(q._id, e.target.value)}
-                className="w-5 h-5 text-indigo-600 border-gray-300 focus:ring-indigo-500"
-              />
-              <span className={`font-medium ${answers[q._id] === opt ? 'text-indigo-900' : 'text-gray-700'}`}>
-                {opt}
-              </span>
-            </label>
-          ))}
-        </div>
-      );
-    }
-
-    // 2. Dropdown (Matching Headings)
-    if (type === 'matching_headings') {
-      return (
-        <select
-          value={answers[q._id] || ''}
-          onChange={(e) => handleAnswerChange(q._id, e.target.value)}
-          className="w-full p-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all font-medium text-gray-900 bg-white cursor-pointer"
-        >
-          <option value="" disabled>Select a heading...</option>
-          {q.options?.map((opt, i) => (
-            <option key={i} value={opt}>{opt}</option>
-          ))}
-        </select>
-      );
-    }
-
-    // 3. Default to Text Input (Fill in the Blank, short answer, etc)
-    return (
-      <input 
-        type="text"
-        value={answers[q._id] || ''}
-        onChange={(e) => handleAnswerChange(q._id, e.target.value)}
-        placeholder="Type your exact answer here..."
-        className="w-full p-4 rounded-xl border-2 border-gray-200 focus:border-indigo-500 focus:ring-4 focus:ring-indigo-50 outline-none transition-all font-medium text-gray-900"
-      />
-    );
-  };
 
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
@@ -302,7 +225,6 @@ const LiveAssessment = () => {
           </div>
           
           <div className="flex items-center gap-6">
-
             <div className="hidden md:flex items-center gap-2 px-4 py-2 bg-green-50 rounded-lg border border-green-100">
             <span className="flex h-2 w-2 relative">
               <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-green-400 opacity-75"></span>
@@ -370,6 +292,7 @@ const LiveAssessment = () => {
                     [&_em]:italic
                     [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-5
                     [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-5
+                    break-words whitespace-pre-wrap [&_*]:whitespace-pre-wrap
                   "
                   dangerouslySetInnerHTML={{ __html: activeSet.content }} 
                 />
@@ -398,7 +321,7 @@ const LiveAssessment = () => {
                   </h3>
 
                   <div className="ml-11">
-                    {renderQuestionInput(q)}
+                    <QuestionRenderer q={q} currentAnswer={answers[q._id]} onChange={handleAnswerChange} />
                   </div>
                   
                 </div>

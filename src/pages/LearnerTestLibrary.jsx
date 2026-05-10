@@ -111,7 +111,7 @@ const LearnerTestLibrary = () => {
               <div className="p-5 border-t border-gray-100 bg-gray-50">
                 <button 
                   // 👇 This will navigate to the actual Exam Interface! 👇
-                  onClick={() => navigate(`/learner/test/${test._id}`)}
+                  onClick={() => navigate(`/learner/full-practice?testId=${test._id}`)}
                   className="w-full py-4 bg-gradient-to-r from-indigo-600 to-purple-600 text-white font-bold rounded-xl shadow-lg shadow-indigo-200 hover:shadow-indigo-300 active:scale-95 transition-all flex items-center justify-center gap-2"
                 >
                   <FaPlay className="text-xs" /> Start Practice Test

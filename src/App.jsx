@@ -27,6 +27,7 @@ import LearnerResult from './pages/learner/LearnerResult'
 import TutorLeaderboard from './pages/tutor/TutorLeaderboard'
 import LearnerScores from './pages/learner/LearnerScores'
 import MiniPractice from './pages/learner/MiniPractice'
+import FullPractice from './pages/learner/FullPractice'
 
 // Home Page Component
 const Home = () => {
@@ -113,18 +114,19 @@ function App() {
         <Route path="/signup" element={<Signup />} />
         <Route path="/learner/assessment/:roomId" element={<LiveAssessment />} />
         <Route path="/learner/mini-practice" element={<MiniPractice />} />
+        <Route path="/learner/full-practice" element={<FullPractice />} />
 
         <Route element={<MainLayout />}>
           
           <Route path="/" element={<Home />} />
           <Route path="/practice" element={<PracticeSelection />} />
+          <Route path="/learner/library" element={<LearnerTestLibrary />} />
           <Route path="/join-room" element={<JoinRoom />} />
           <Route path="/learner/lobby/:roomId" element={<LearnerLobby />} />
           <Route path="/learner/assessment/result/:attemptId" element={<LearnerResult />} />
 
           <Route element={<ProtectedRoute />}>
             <Route path="/dashboard" element={<LearnerDashboard />} />
-            <Route path="/learner/library" element={<LearnerTestLibrary />} />
             <Route path="/profile" element={<EditProfile />} />
             <Route path="/learner/scores" element={<LearnerScores />} />
 
