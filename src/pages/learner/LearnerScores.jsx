@@ -2,35 +2,46 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   FaHistory, FaCalendarAlt, FaCheckCircle, FaChartBar, 
-  FaSpinner, FaTrophy, FaArrowLeft, FaChevronRight, FaGraduationCap
+  FaSpinner, FaTrophy, FaArrowLeft, FaChevronRight, FaGraduationCap,
+  FaStar,
+  FaExclamationTriangle
 } from 'react-icons/fa';
 import api from '../../api/axios';
+import { formatQuestionType } from '../../utils/formatters';
 
 const LearnerScores = () => {
   const navigate = useNavigate();
   const [history, setHistory] = useState([]);
+  const [insights, setInsights] = useState([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
 
   useEffect(() => {
     const fetchHistory = async () => {
       try {
-        // 👇 FIXED: Check both storage locations!
         const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         const guestId = localStorage.getItem('guestId') || sessionStorage.getItem('guestId');
+        
+        const headers = {
+          'Authorization': token ? `Bearer ${token}` : '',
+          'x-guest-id': guestId || ''
+        };
 
-        const response = await api.get('/attempts/history', {
-          headers: {
-            'Authorization': token ? `Bearer ${token}` : '',
-            'x-guest-id': guestId || ''
-          }
-        });
+        const [historyRes, insightsRes] = await Promise.all([
+          api.get('/attempts/history', { headers }),
+          api.get('/attempts/lifetime-insights', { headers }).catch(() => ({ data: { success: false, data: [] } }))
+        ]);
 
-        if (response.data.success) {
-          setHistory(response.data.data);
+        if (historyRes.data.success) {
+          setHistory(historyRes.data.data);
         }
+        
+        if (insightsRes.data && insightsRes.data.success) {
+          setInsights(insightsRes.data.data);
+        }
+
       } catch (err) {
-        console.error("Failed to fetch history:", err);
+        console.error("Failed to fetch dashboard data:", err);
         setError("Failed to load your score history. Please try again later.");
       } finally {
         setIsLoading(false);
@@ -40,7 +51,6 @@ const LearnerScores = () => {
     fetchHistory();
   }, []);
 
-  // 👇 FIXED: Use 'percentage' for the overall math
   const totalTests = history.length;
   const averageScore = totalTests > 0 
     ? Math.round(history.reduce((acc, curr) => acc + curr.percentage, 0) / totalTests) 
@@ -63,6 +73,9 @@ const LearnerScores = () => {
       </div>
     );
   }
+
+  const topSkill = insights.length > 0 ? insights[0] : null;
+  const worstSkill = insights.length > 1 ? insights[insights.length - 1] : null;
 
   return (
     <div className="min-h-screen py-10 px-4 sm:px-6 lg:px-8">
@@ -132,6 +145,63 @@ const LearnerScores = () => {
               </div>
             </div>
 
+            {insights.length > 0 && (
+              <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden mb-8">
+                <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50 flex justify-between items-center">
+                  <h3 className="text-lg font-bold text-gray-900">Skill Analysis</h3>
+                  <span className="text-xs font-bold text-gray-400 uppercase bg-white px-3 py-1 rounded-full border border-gray-200">Based on all attempts</span>
+                </div>
+                
+                <div className="p-6">
+                  {/* Highlights */}
+                  {topSkill && worstSkill && (
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-8">
+                      <div className="bg-green-50 border border-green-100 p-4 rounded-2xl flex items-center gap-4">
+                        <div className="bg-green-100 text-green-600 p-3 rounded-full"><FaStar /></div>
+                        <div>
+                          <p className="text-xs font-bold text-green-600 uppercase">Top Strength</p>
+                        <p className="font-bold text-gray-900">{formatQuestionType(topSkill.questionType)}</p>
+                          <p className="text-sm text-green-700 font-medium">{topSkill.winRate}% Accuracy</p>
+                        </div>
+                      </div>
+                      <div className="bg-amber-50 border border-amber-100 p-4 rounded-2xl flex items-center gap-4">
+                        <div className="bg-amber-100 text-amber-600 p-3 rounded-full"><FaExclamationTriangle /></div>
+                        <div>
+                          <p className="text-xs font-bold text-amber-600 uppercase">Needs Focus</p>
+                          <p className="font-bold text-gray-900">{formatQuestionType(worstSkill.questionType)}</p>
+                          <p className="text-sm text-amber-700 font-medium">{worstSkill.winRate}% Accuracy</p>
+                        </div>
+                      </div>
+                    </div>
+                  )}
+
+                  {/* Detailed Progress Bars */}
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-x-12 gap-y-6">
+                    {insights.map((insight, idx) => (
+                      <div key={idx}>
+                        <div className="flex justify-between items-end mb-2">
+                          <span className="text-sm font-semibold text-gray-700">{formatQuestionType(insight.questionType) || 'General'}</span>
+                          <span className="text-sm font-bold text-gray-900">{insight.winRate}%</span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2.5 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-1000 ${
+                              insight.winRate >= 80 ? 'bg-green-500' : 
+                              insight.winRate >= 60 ? 'bg-indigo-500' : 'bg-amber-500'
+                            }`}
+                            style={{ width: `${Math.max(insight.winRate, 5)}%` }} 
+                          ></div>
+                        </div>
+                        <p className="text-[10px] font-semibold text-gray-400 mt-1 uppercase tracking-wider text-right">
+                          {insight.totalCorrect} / {insight.totalAttempted} Correct
+                        </p>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
             {/* History Table/List */}
             <div className="bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden">
               <div className="px-6 py-5 border-b border-gray-100 bg-gray-50/50">
@@ -167,7 +237,7 @@ const LearnerScores = () => {
 
                     <div className="flex items-center justify-between sm:justify-end gap-6 w-full sm:w-auto mt-4 sm:mt-0">
                       
-                      {/* 👇 NEW: Displaying IELTS Band and Percentage! */}
+                      {/* IELTS Band and Percentage */}
                       <div className="text-right flex items-center gap-4">
                         <div className="hidden md:block">
                           <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Score</p>

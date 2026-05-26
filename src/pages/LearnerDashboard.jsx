@@ -128,7 +128,7 @@ const LearnerDashboard = () => {
               </div>
               <h3 className="text-xl font-bold text-gray-900 mb-2">Past Scores</h3>
               <p className="text-gray-500 text-sm leading-relaxed">
-                Review your previous test results, check correct answers, and track your band score progress.
+                Review your previous test results, check performance insights, and track your band score progress.
               </p>
             </div>
             <div className="mt-6 flex items-center text-green-600 font-bold text-sm">

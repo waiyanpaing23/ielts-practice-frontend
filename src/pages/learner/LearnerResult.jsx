@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useMemo } from 'react';
 import { useNavigate, useParams } from 'react-router-dom';
 import { FaHome, FaCheckCircle, FaChartPie, FaTimesCircle, FaLightbulb, FaCalendarDay, FaGraduationCap } from 'react-icons/fa';
 import api from '../../api/axios';
@@ -26,6 +26,31 @@ const LearnerResult = () => {
 
     if (attemptId) fetchResult();
   }, [attemptId, navigate]);
+
+  // question type insights
+  const testInsights = useMemo(() => {
+    if (!result?.analysis || result.analysis.length === 0) return [];
+
+    const stats = result.analysis.reduce((acc, item) => {
+      const type = item.questionType || 'Other'; 
+      
+      if (!acc[type]) {
+        acc[type] = { total: 0, correct: 0 };
+      }
+      
+      acc[type].total += 1;
+      if (item.isCorrect) acc[type].correct += 1;
+      
+      return acc;
+    }, {});
+
+    return Object.keys(stats).map(type => ({
+      type,
+      total: stats[type].total,
+      correct: stats[type].correct,
+      percentage: Math.round((stats[type].correct / stats[type].total) * 100)
+    })).sort((a, b) => b.percentage - a.percentage);
+  }, [result]);
 
   if (!result || isLoading) return null;
 
@@ -99,8 +124,10 @@ const LearnerResult = () => {
       <div className="max-w-7xl mx-auto flex flex-col lg:flex-row gap-8 items-start">
         
         {/* LEFT COLUMN */}
+        {/* LEFT COLUMN */}
         <div className="w-full lg:w-1/3 lg:sticky lg:top-24 pt-1">
-          <div className="w-full bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 overflow-hidden text-center relative">
+          {/* 👇 FIXED: Added max-h and overflow-y-auto with custom scrollbar styling */}
+          <div className="w-full bg-white rounded-3xl shadow-xl shadow-gray-200/50 border border-gray-100 text-center relative overflow-y-auto max-h-[calc(100vh-7rem)] [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-thumb]:bg-gray-200 [&::-webkit-scrollbar-thumb]:rounded-full [&::-webkit-scrollbar-track]:bg-transparent">
             <div className="absolute top-0 left-0 w-full h-32 bg-gradient-to-br from-indigo-50 to-purple-50 border-b border-indigo-100/50"></div>
             <div className="relative pt-10 px-8 pb-8">
               
@@ -134,6 +161,35 @@ const LearnerResult = () => {
                 </div>
               </div>
 
+              {testInsights.length > 0 && (
+                <div className="mb-8 text-left">
+                  <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-4 border-b border-gray-100 pb-2">Performance by Type</p>
+                  <div className="space-y-4">
+                    {testInsights.map((insight, idx) => (
+                      <div key={idx}>
+                        <div className="flex justify-between items-end mb-1">
+                          <span className="text-sm font-semibold text-gray-700 truncate pr-2" title={insight.type}>
+                            {insight.type === 'Other' ? 'General Questions' : insight.type}
+                          </span>
+                          <span className={`text-xs font-bold flex-shrink-0 ${getScoreColor(insight.percentage)}`}>
+                            {insight.correct}/{insight.total}
+                          </span>
+                        </div>
+                        <div className="w-full bg-gray-100 rounded-full h-2 overflow-hidden">
+                          <div
+                            className={`h-full rounded-full transition-all duration-1000 ${
+                              insight.percentage >= 80 ? 'bg-green-500' : 
+                              insight.percentage >= 60 ? 'bg-indigo-500' : 'bg-amber-500'
+                            }`}
+                            style={{ width: `${Math.max(insight.percentage, 5)}%` }} // Minimum 5% width so the bar is always visible
+                          ></div>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               <button 
                 onClick={() => navigate('/dashboard')}
                 className="w-full py-4 bg-gray-900 text-white font-bold text-lg rounded-xl hover:bg-gray-800 hover:shadow-lg transition-all shadow-md flex items-center justify-center gap-2"
@@ -160,7 +216,14 @@ const LearnerResult = () => {
                     {item.isCorrect ? <FaCheckCircle className="text-xl" /> : <FaTimesCircle className="text-xl" />}
                   </div>
                   <div>
-                    <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">Question {index + 1}</p>
+                    <p className="text-sm font-bold text-gray-400 uppercase tracking-wider mb-1">
+                      Question {index + 1}
+                      {item.questionType && (
+                        <span className="bg-gray-100 text-gray-500 text-[10px] px-2 py-0.5 rounded">
+                          {item.questionType}
+                        </span>
+                      )}
+                      </p>
                     <p className="font-semibold text-gray-900 text-lg">{item.content}</p>
                   </div>
                 </div>

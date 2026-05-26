@@ -1,5 +1,5 @@
 import React, { useState } from 'react'
-import { FcGoogle } from 'react-icons/fc'
+import { FcGoogle } from 'react-icons/fc' // Kept your imports intact
 import { FaUserGraduate, FaChalkboardTeacher } from 'react-icons/fa'
 import { Link, useNavigate } from 'react-router-dom'
 import api from '../api/axios'
@@ -16,6 +16,9 @@ const Signup = () => {
 
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState('');
+  
+  // 1. New state for GDPR consent
+  const [agreeToConsent, setAgreeToConsent] = useState(false);
 
   const handleChange = (e) => {
     const { name, value } = e.target
@@ -36,6 +39,13 @@ const Signup = () => {
     e.preventDefault()
     setIsLoading(true);
     setError('');
+
+    // 2. Form Validation: Block submission if consent is missing
+    if (!agreeToConsent) {
+      setError('You must consent to the data processing policy to create an account.');
+      setIsLoading(false);
+      return;
+    }
 
     try {
       const response = await api.post('/auth/signup', formData);
@@ -76,7 +86,7 @@ const Signup = () => {
           
           {/* Error Message Display */}
           {error && (
-            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-md text-sm">
+            <div className="mb-6 p-4 bg-red-50 border-l-4 border-red-500 text-red-700 rounded-r-md text-sm font-medium">
               {error}
             </div>
           )}
@@ -155,7 +165,7 @@ const Signup = () => {
             </div>
 
             <div>
-              <label htmlFor="email" className="block text-sm font-semibold text-gray-700 mb-2">
+              <label htmlFor="fullName" className="block text-sm font-semibold text-gray-700 mb-2">
                 Full Name
               </label>
               <input
@@ -163,7 +173,7 @@ const Signup = () => {
                 name="fullName"
                 type="text"
                 autoComplete="name"
-                
+                required
                 value={formData.fullName}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none text-gray-900 placeholder-gray-400"
@@ -180,7 +190,7 @@ const Signup = () => {
                 name="email"
                 type="email"
                 autoComplete="email"
-                
+                required
                 value={formData.email}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none text-gray-900 placeholder-gray-400"
@@ -197,12 +207,36 @@ const Signup = () => {
                 name="password"
                 type="password"
                 autoComplete="new-password"
-                
+                required
                 value={formData.password}
                 onChange={handleChange}
                 className="w-full px-4 py-3 rounded-xl border border-gray-200 focus:border-indigo-500 focus:ring-2 focus:ring-indigo-200 transition-all outline-none text-gray-900 placeholder-gray-400"
                 placeholder="••••••••"
               />
+            </div>
+
+            {/* 3. GDPR Consent Checkbox UI */}
+            <div className="flex items-start pt-2 pb-2">
+              <div className="flex items-center h-5 mt-0.5">
+                <input
+                  id="gdpr-consent"
+                  type="checkbox"
+                  checked={agreeToConsent}
+                  onChange={(e) => {
+                    setAgreeToConsent(e.target.checked);
+                    if (e.target.checked) setError(''); // Clear error if they check it
+                  }}
+                  className="w-4 h-4 border border-gray-300 rounded bg-gray-50 focus:ring-3 focus:ring-indigo-500 cursor-pointer accent-indigo-600"
+                />
+              </div>
+              <div className="ml-3 text-sm">
+                <label htmlFor="gdpr-consent" className="font-semibold text-gray-700 cursor-pointer">
+                  I consent to data processing
+                </label>
+                <p className="text-gray-500 text-xs mt-1 leading-relaxed">
+                  By checking this box, I agree to allow this platform to store my email address and track my assessment scores to provide personalized learning insights.
+                </p>
+              </div>
             </div>
 
             <button
@@ -211,29 +245,13 @@ const Signup = () => {
               className={`w-full px-4 py-3.5 bg-gradient-to-r from-indigo-600 to-purple-600 text-white rounded-xl font-bold shadow-xl transition-all ${
                 isLoading 
                   ? 'opacity-70 cursor-not-allowed' 
-                  : 'shadow-indigo-200 hover:shadow-indigo-300 hover:scale-[1.02] active:scale-95'
+                  : 'shadow-indigo-200 hover:shadow-indigo-300 hover:-translate-y-0.5 active:scale-95'
               }`}
             >
               {isLoading ? 'Creating Account...' : 'Create Account'}
             </button>
           </form>
 
-          {/* Divider */}
-          {/* <div className="relative my-8">
-            <div className="absolute inset-0 flex items-center">
-              <div className="w-full border-t border-gray-200"></div>
-            </div>
-            <div className="relative flex justify-center text-sm">
-              <span className="px-4 bg-white text-gray-500">Or continue with</span>
-            </div>
-          </div>
-
-          <button className="flex w-full items-center justify-center px-4 py-3 border border-gray-200 rounded-xl hover:bg-gray-50 transition-all group">
-            <FcGoogle className="w-5 h-5" />
-            <span className="ml-2 text-sm font-medium text-gray-700 group-hover:text-gray-900">
-              Continue with Google
-            </span>
-          </button> */}
         </div>
 
         <p className="text-center text-gray-600">

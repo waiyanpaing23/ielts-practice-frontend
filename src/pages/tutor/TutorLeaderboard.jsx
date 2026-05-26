@@ -242,7 +242,7 @@ const TutorLeaderboard = ({ roomId: propRoomId }) => {
                      </div>
                      <div className="flex-1 bg-white p-4 rounded-2xl border border-gray-100 text-center shadow-sm">
                         <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-1">Correct</p>
-                        <p className="text-3xl font-black text-green-500">{studentPaper.correctAnswers} / {studentPaper.totalQuestions}</p>
+                        <p className="text-3xl font-black text-green-500">{studentPaper.rawScore} / {studentPaper.totalQuestions}</p>
                      </div>
                   </div>
 
