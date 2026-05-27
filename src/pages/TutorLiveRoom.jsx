@@ -14,10 +14,13 @@ const TutorLiveRoom = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [roomData, setRoomData] = useState(null);
   const [students, setStudents] = useState([]);
-  const [timeLeft, setTimeLeft] = useState(0);
   const [isDeleting, setIsDeleting] = useState(false);
   const [copied, setCopied] = useState(false);
   const [liveProgress, setLiveProgress] = useState({});
+
+  const [timeLeft, setTimeLeft] = useState(0); // Display only (in seconds)
+  const [examEndTime, setExamEndTime] = useState(null);
+  const [timeOffset, setTimeOffset] = useState(0);
 
   useEffect(() => {
 
@@ -33,11 +36,10 @@ const TutorLiveRoom = () => {
     const handleProgressUpdate = (data) => {
       setLiveProgress(prev => ({
         ...prev,
-        [data.studentId]: data // Store it using the studentId as the key
+        [data.studentId]: data
       }));
     };
 
-    // store and sync progress on tutor monitoring view as progress is lost when tutor refreshes the page
     const handleSyncData = (cachedData) => {
       console.log("Synced progress from server cache!");
       setLiveProgress(cachedData);
@@ -58,16 +60,31 @@ const TutorLiveRoom = () => {
       fetchRoomDetails(); 
     };
 
+    const handleAssessmentStarted = (data) => {
+      const { endTime, serverNow } = data;
+      
+      const localNow = Date.now();
+      const currentOffset = serverNow - localNow; 
+      
+      setTimeOffset(currentOffset);
+      setExamEndTime(endTime);
+
+      localStorage.setItem(`masterEndTime_${roomId}`, endTime.toString());
+      fetchRoomDetails();
+    };
+
     socket.on('student-joined', handleStudentJoined);
     socket.on('progress-updated', handleProgressUpdate);
     socket.on('progress-sync-data', handleSyncData);
     socket.on('student-submitted', handleStudentSubmitted);
+    socket.on('assessment-started', handleAssessmentStarted);
     
     return () => {
       socket.off('student-joined', handleStudentJoined);
       socket.off('progress-updated', handleProgressUpdate);
       socket.off('progress-sync-data', handleSyncData);
       socket.off('student-submitted', handleStudentSubmitted);
+      socket.off('assessment-started', handleAssessmentStarted);
     };
   }, [roomId]);
 
@@ -80,15 +97,9 @@ const TutorLiveRoom = () => {
         setStudents(room.participants || []);
 
         if (room.status === 'in_progress') {
-          const timeLimit = room.customTimeLimit || room.test?.timeLimit || 60;
-          
-          if (room.startedAt) {
-            const endTime = new Date(room.startedAt).getTime() + (timeLimit * 60 * 1000);
-            const remainingSeconds = Math.floor((endTime - Date.now()) / 1000);
-            setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
-          } else {
-            // 👇 FIX: Failsafe in case backend doesn't return startedAt immediately
-            setTimeLeft(timeLimit * 60);
+          const cachedEndTime = localStorage.getItem(`masterEndTime_${roomId}`);
+          if (cachedEndTime) {
+            setExamEndTime(parseInt(cachedEndTime));
           }
         }
       }
@@ -106,23 +117,22 @@ const TutorLiveRoom = () => {
   }, [roomId]);
 
   useEffect(() => {
-    // 👇 FIX: Only rely on the room status. Let the interval handle the math internally!
-    if (roomData?.status !== 'in_progress') return;
+    if (!examEndTime || roomData?.status !== 'in_progress') return;
 
     const timerId = setInterval(() => {
-      setTimeLeft(prev => {
-        if (prev <= 1) {
-          clearInterval(timerId);
-          // Optional: You could trigger an auto-end here for the tutor if you wanted
-          return 0; 
-        }
-        return prev - 1;
-      });
+      const syncedNow = Date.now() + timeOffset;
+      const remainingMs = examEndTime - syncedNow;
+
+      if (remainingMs <= 0) {
+        clearInterval(timerId);
+        setTimeLeft(0);
+      } else {
+        setTimeLeft(Math.ceil(remainingMs / 1000));
+      }
     }, 1000);
 
     return () => clearInterval(timerId);
-    // 👇 FIX: Removed timeLeft from this array so the timer doesn't destroy itself every second
-  }, [roomData?.status]);
+  }, [examEndTime, timeOffset, roomData?.status]);
 
   const handleStartAssessment = async () => {
     if (students.length === 0) {
@@ -135,8 +145,8 @@ const TutorLiveRoom = () => {
         const response = await api.post(`/rooms/${roomId}/start`);
         if (response.data.success) {
 
-          socket.emit('tutor-start-assessment', roomId);
-          fetchRoomDetails();
+          const durationInMinutes = roomData.customTimeLimit || roomData.test?.timeLimit || 60;
+          socket.emit('tutor-start-assessment', { roomId, durationInMinutes });
         }
       } catch (error) {
         console.error("Failed to start assessment:", error);
@@ -176,6 +186,7 @@ const TutorLiveRoom = () => {
     try {
       const response = await api.delete(`/rooms/${roomId}`);
       if (response.data.success) {
+        localStorage.removeItem(`masterEndTime_${roomId}`);
         navigate('/tutor');
       }
     } catch (error) {
@@ -193,7 +204,6 @@ const TutorLiveRoom = () => {
     );
   }
 
-  // 👇 The magical clean return statement
   return roomData.status === 'waiting' ? (
     <LobbyView 
     roomData={roomData} 

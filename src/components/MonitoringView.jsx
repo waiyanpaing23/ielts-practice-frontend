@@ -39,14 +39,15 @@ const MonitoringView = ({ roomData, students, timeLeft, onEndAssessment, formatT
         </div>
 
         <div className="flex items-center gap-6 mt-4 md:mt-0">
-          <div className={`flex flex-col items-center px-6 py-2 rounded-xl border ${
-            timeLeft < 300 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'
+          <div className={`flex flex-col items-center px-6 py-2 rounded-xl border transition-colors duration-300 ${
+            timeLeft > 0 && timeLeft < 300 ? 'bg-red-50 border-red-200' : 'bg-gray-50 border-gray-200'
           }`}>
             <span className="text-xs font-bold text-gray-500 uppercase tracking-wider mb-0.5">Time Remaining</span>
             <div className={`flex items-center gap-2 font-mono text-2xl font-black ${
-              timeLeft < 300 ? 'text-red-600 animate-pulse' : 'text-gray-800'
+              timeLeft > 0 && timeLeft < 300 ? 'text-red-600 animate-pulse' : 'text-gray-800'
             }`}>
-              <FaClock /> {formatTime(timeLeft)}
+              <FaClock className={timeLeft > 0 && timeLeft < 300 ? 'text-red-500' : 'text-gray-500'} /> 
+              {formatTime(timeLeft)}
             </div>
           </div>
 
@@ -82,7 +83,6 @@ const MonitoringView = ({ roomData, students, timeLeft, onEndAssessment, formatT
             //   isStuck: index === 0 
             // };
             const studentId = p.user?._id || p.guestId || p._id;
-      
             const studentData = liveProgress[studentId] || {};
             
             const answeredCount = studentData.answeredCount || 0;

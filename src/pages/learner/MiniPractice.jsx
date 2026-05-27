@@ -239,7 +239,18 @@ const MiniPractice = () => {
                             {passage.title}
                         </h2>
                         <div 
-                            className="prose prose-lg prose-indigo text-gray-700 leading-relaxed"
+                            // className="prose prose-lg prose-indigo text-gray-700 leading-relaxed"
+                            className="
+                                text-gray-700 leading-relaxed 
+                                [&_h2]:text-2xl [&_h2]:font-extrabold [&_h2]:text-gray-900 [&_h2]:mb-6 [&_h2]:mt-2
+                                [&_h3]:text-xl [&_h3]:font-bold [&_h3]:text-gray-900 [&_h3]:mb-4 [&_h3]:mt-6
+                                [&_p]:mb-5 [&_p]:text-lg
+                                [&_strong]:font-bold [&_strong]:text-gray-900
+                                [&_em]:italic
+                                [&_ul]:list-disc [&_ul]:pl-6 [&_ul]:mb-5
+                                [&_ol]:list-decimal [&_ol]:pl-6 [&_ol]:mb-5
+                                break-words whitespace-pre-wrap [&_*]:whitespace-pre-wrap
+                            "
                             dangerouslySetInnerHTML={{ __html: passage.content }}
                         />
                     </div>

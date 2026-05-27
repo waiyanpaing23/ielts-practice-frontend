@@ -11,11 +11,16 @@ const LiveAssessment = () => {
 
   // --- 1. STATE ---
   const [isLoading, setIsLoading] = useState(true);
+  const [isTimeUp, setIsTimeUp] = useState(false); // NEW: Tracks if time ran out
   const [roomData, setRoomData] = useState(null);
   const [testData, setTestData] = useState(null);
   const [answers, setAnswers] = useState({});
-  const [timeLeft, setTimeLeft] = useState(0);
   const [activeSetIndex, setActiveSetIndex] = useState(0);
+  
+  // TIMER STATE
+  const [timeLeft, setTimeLeft] = useState(0); 
+  const [examEndTime, setExamEndTime] = useState(null);
+  const [timeOffset, setTimeOffset] = useState(0);
 
   // --- 2. HELPER FUNCTIONS ---
   const getStudentId = () => {
@@ -32,12 +37,13 @@ const LiveAssessment = () => {
   };
 
   const formatTime = (seconds) => {
+    if (seconds <= 0) return "00:00";
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
     return `${m.toString().padStart(2, '0')}:${s.toString().padStart(2, '0')}`;
   };
 
-  // --- 3. ACTION & SUBMIT FUNCTIONS (Moved to the top!) ---
+  // --- 3. ACTION & SUBMIT FUNCTIONS ---
   const submitExam = async () => {
     try {
       setIsLoading(true);
@@ -50,10 +56,9 @@ const LiveAssessment = () => {
       });
 
       if (response.data.success) {
-        // Clean up browser storage
         localStorage.removeItem('activeRoomId');
         localStorage.removeItem(`answers_${roomId}`);
-        localStorage.removeItem(`endTime_${roomId}`);
+        localStorage.removeItem(`masterEndTime_${roomId}`); 
 
         const attemptId = response.data.data.attemptId;
         navigate(`/learner/assessment/result/${attemptId}`);
@@ -62,11 +67,14 @@ const LiveAssessment = () => {
       console.error("Failed to submit exam:", error);
       alert("There was an error saving your exam. Please do not close the window, and contact your tutor.");
       setIsLoading(false);
+      setIsTimeUp(false);
     }
   };
 
   const handleAutoSubmit = () => {
-    alert("Time is up! Submitting your assessment.");
+    // 1. Show the beautiful "Time is Up" UI immediately without blocking the thread
+    setIsTimeUp(true); 
+    // 2. Fire the backend submission
     submitExam();
   };
 
@@ -111,7 +119,22 @@ const LiveAssessment = () => {
   useEffect(() => {
     if (!socket.connected) socket.connect();
     socket.emit('join-room', roomId);
-    return () => {};
+
+    const handleAssessmentStarted = (data) => {
+      const { endTime, serverNow } = data;
+      const localNow = Date.now();
+      const currentOffset = serverNow - localNow; 
+      
+      setTimeOffset(currentOffset);
+      setExamEndTime(endTime);
+      localStorage.setItem(`masterEndTime_${roomId}`, endTime.toString());
+    };
+
+    socket.on('assessment-started', handleAssessmentStarted);
+
+    return () => {
+      socket.off('assessment-started', handleAssessmentStarted);
+    };
   }, [roomId]);
 
   useEffect(() => {
@@ -149,15 +172,23 @@ const LiveAssessment = () => {
           setAnswers(JSON.parse(savedAnswers));
         }
 
-        const savedEndTime = localStorage.getItem(`endTime_${roomId}`);
-        if (savedEndTime) {
-          const remainingSeconds = Math.floor((parseInt(savedEndTime) - Date.now()) / 1000);
-          setTimeLeft(remainingSeconds > 0 ? remainingSeconds : 0);
-        } else {
-          const timeToUse = room.customTimeLimit || room.test.timeLimit || 60;
-          const totalSeconds = timeToUse * 60;
-          setTimeLeft(totalSeconds);
-          localStorage.setItem(`endTime_${roomId}`, Date.now() + (totalSeconds * 1000));
+        const cachedEndTime = localStorage.getItem(`masterEndTime_${roomId}`);
+        
+        if (cachedEndTime) {
+          // Scenario A: Student refreshed the page mid-exam
+          setExamEndTime(parseInt(cachedEndTime));
+        } else if (room.status === 'in_progress') {
+          // Scenario B: Race Condition! Student transitioned from Lobby to here 
+          // and missed the socket event. We calculate the end time from the DB!
+          const timeLimit = room.customTimeLimit || room.test?.timeLimit || 60;
+          
+          // Grab the exact millisecond the backend started the room
+          const startTime = room.startedAt ? new Date(room.startedAt).getTime() : Date.now();
+          const calculatedEndTime = startTime + (timeLimit * 60 * 1000);
+          
+          setExamEndTime(calculatedEndTime);
+          // Save it to cache so it doesn't break if they refresh
+          localStorage.setItem(`masterEndTime_${roomId}`, calculatedEndTime.toString());
         }
         
         setIsLoading(false);
@@ -172,26 +203,32 @@ const LiveAssessment = () => {
     fetchExamData();
   }, [roomId, navigate]);
 
+  // The Foolproof Absolute Math Timer
   useEffect(() => {
-    if (timeLeft <= 0 || isLoading) return;
+    // Don't run the timer if the test is already submitting
+    if (!examEndTime || isLoading || isTimeUp) return;
+
     const timerId = setInterval(() => {
-      setTimeLeft((prev) => {
-        if (prev <= 1) {
-          clearInterval(timerId);
-          handleAutoSubmit(); // Now perfectly safe to call!
-          return 0;
-        }
-        return prev - 1;
-      });
+      const syncedNow = Date.now() + timeOffset;
+      const remainingMs = examEndTime - syncedNow;
+
+      if (remainingMs <= 0) {
+        clearInterval(timerId);
+        setTimeLeft(0);
+        handleAutoSubmit(); 
+      } else {
+        setTimeLeft(Math.ceil(remainingMs / 1000));
+      }
     }, 1000);
+
     return () => clearInterval(timerId);
-  }, [timeLeft, isLoading]);
+  }, [examEndTime, timeOffset, isLoading, isTimeUp]); // Added isTimeUp dependency
 
   useEffect(() => {
     if (!socket) return;
     const handleRoomEnded = () => {
       alert("The tutor has ended the assessment. Submitting your current answers...");
-      submitExam(); // Now perfectly safe to call!
+      submitExam(); 
     };
     socket.on('room-ended', handleRoomEnded);
     return () => {
@@ -200,11 +237,28 @@ const LiveAssessment = () => {
   }, [roomId, navigate]);
 
   // --- 5. RENDER UI ---
-  if (isLoading || !testData) {
+  if (isTimeUp || isLoading || !testData) {
     return (
-      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center">
-        <FaSpinner className="animate-spin text-indigo-600 w-12 h-12 mb-4" />
-        <p className="text-gray-500 font-bold text-lg tracking-wider uppercase">Loading Assessment...</p>
+      <div className="min-h-screen bg-gray-50 flex flex-col items-center justify-center fixed inset-0 z-[100]">
+        
+        {isTimeUp ? (
+          // The "Time is Up" Screen
+          <div className="flex flex-col items-center animate-fade-in-up text-center px-4">
+            <FaClock className="text-red-500 w-16 h-16 mb-4 animate-bounce" />
+            <h2 className="text-3xl font-extrabold text-gray-900 mb-2">Time's Up!</h2>
+            <p className="text-gray-500 font-bold text-lg tracking-wider flex items-center justify-center gap-3">
+              <FaSpinner className="animate-spin text-indigo-600" /> 
+              Auto-submitting your answers...
+            </p>
+          </div>
+        ) : (
+          // The Standard Loading Screen
+          <div className="flex flex-col items-center">
+            <FaSpinner className="animate-spin text-indigo-600 w-12 h-12 mb-4" />
+            <p className="text-gray-500 font-bold text-lg tracking-wider uppercase">Loading Assessment...</p>
+          </div>
+        )}
+
       </div>
     );
   }
@@ -214,7 +268,6 @@ const LiveAssessment = () => {
   return (
     <div className="h-screen bg-gray-50 flex flex-col overflow-hidden">
       
-      {/* Sticky Header */}
       <header className="bg-white border-b border-gray-200 flex-none flex flex-col z-50">
         <div className="w-full px-6 h-20 flex items-center justify-between">
           <div>
@@ -236,9 +289,9 @@ const LiveAssessment = () => {
           </div>
 
             <div className={`flex items-center gap-2 px-5 py-2.5 rounded-xl font-mono text-xl font-bold transition-colors ${
-              timeLeft < 300 ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-gray-100 text-gray-800 border border-gray-200'
+              timeLeft > 0 && timeLeft < 300 ? 'bg-red-50 text-red-600 border border-red-200 animate-pulse' : 'bg-gray-100 text-gray-800 border border-gray-200'
             }`}>
-              <FaClock className={timeLeft < 300 ? 'text-red-500' : 'text-gray-500'} />
+              <FaClock className={timeLeft > 0 && timeLeft < 300 ? 'text-red-500' : 'text-gray-500'} />
               {formatTime(timeLeft)}
             </div>
             <button 
@@ -267,10 +320,8 @@ const LiveAssessment = () => {
         </div>
       </header>
 
-      {/* Main Split-Screen Workspace */}
       <main className="flex-1 flex flex-col lg:flex-row overflow-hidden min-h-0 bg-white border-t border-gray-200">
         
-        {/* LEFT COLUMN: Active Reading Passage */}
         <div className="w-full lg:w-1/2 h-1/2 lg:h-full border-b lg:border-b-0 lg:border-r border-gray-200 bg-white overflow-y-auto p-8 lg:p-12 shadow-[inset_-10px_0_20px_-20px_rgba(0,0,0,0.1)]">
           <div className="max-w-2xl mx-auto">
             <div className="inline-flex items-center gap-2 px-3 py-1 bg-blue-50 text-blue-700 rounded-md text-sm font-bold uppercase tracking-wider mb-6">
@@ -302,7 +353,6 @@ const LiveAssessment = () => {
             </div>
           </div>
 
-        {/* RIGHT COLUMN: Active Questions */}
         <div className="w-full lg:w-1/2 h-1/2 lg:h-full bg-gray-50 overflow-y-auto p-8 lg:p-12">
           <div className="max-w-2xl mx-auto pb-20">
             

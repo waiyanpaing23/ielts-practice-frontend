@@ -99,12 +99,10 @@ const TutorLeaderboard = ({ roomId: propRoomId }) => {
           <p className="text-gray-500 font-medium mt-2">Review class performance and individual learner papers.</p>
         </div>
         
-        {/* ========================================== */}
-        {/* ROW 1: Analytics & Podium                  */}
-        {/* ========================================== */}
+        {/* Analytics & Podium */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           
-          {/* Column 1: Analytics Overview */}
+          {/* Analytics Overview */}
           <div className="flex flex-col gap-6">
             <div className="bg-white p-6 rounded-3xl shadow-sm border border-gray-200 flex items-center gap-5">
               <div className="w-14 h-14 rounded-full bg-green-100 flex items-center justify-center text-green-600 text-2xl">
@@ -137,7 +135,7 @@ const TutorLeaderboard = ({ roomId: propRoomId }) => {
             </div>
           </div>
 
-          {/* Column 2: Top 5 Leaderboard */}
+          {/* Top 5 Leaderboard */}
           <div className="lg:col-span-2 bg-white rounded-3xl shadow-sm border border-gray-200 overflow-hidden flex flex-col">
             <div className="bg-gray-900 px-6 py-4 flex items-center gap-3">
               <FaTrophy className="text-yellow-400 text-xl" />
@@ -175,9 +173,7 @@ const TutorLeaderboard = ({ roomId: propRoomId }) => {
 
         </div>
 
-        {/* ========================================== */}
-        {/* ROW 2: All Learners Grid                   */}
-        {/* ========================================== */}
+        {/* All Learners Grid */}
         <div>
           <h2 className="text-2xl font-extrabold text-gray-900 mb-6">All Learner Results</h2>
           <div className="flex overflow-x-auto gap-6 pb-8 snap-x snap-mandatory scroll-smooth [&::-webkit-scrollbar]:hidden">
@@ -191,8 +187,10 @@ const TutorLeaderboard = ({ roomId: propRoomId }) => {
                     {learner.name.charAt(0).toUpperCase()}
                   </div>
                   <div className="text-right">
-                    <p className="text-xs font-bold text-gray-400 uppercase">Est. Band</p>
-                    <p className="text-xl font-black text-indigo-600">{getEstimatedBand(learner.score)}</p>
+                    <p className="text-xs font-bold text-gray-400 uppercase">Band Score</p>
+                    <p className="text-xl font-black text-indigo-600">
+                      {learner.bandScore ? learner.bandScore.toFixed(1) : getEstimatedBand(learner.score)}
+                    </p>
                   </div>
                 </div>
                 
