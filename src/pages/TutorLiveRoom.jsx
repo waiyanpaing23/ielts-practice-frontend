@@ -162,6 +162,15 @@ const TutorLiveRoom = () => {
     }
   };
 
+  const handleKickStudent = async (studentId) => {
+    if (window.confirm("Are you sure you want to remove this student from the room?")) {
+      socket.emit('kick-student', { roomId, studentId });
+      
+      setStudents(prevStudents => prevStudents.filter(student => student._id !== studentId));
+      await api.post(`/rooms/${roomId}/kick`, { studentId });
+    }
+  };
+
   const formatTime = (seconds) => {
     const m = Math.floor(seconds / 60);
     const s = seconds % 60;
@@ -213,6 +222,7 @@ const TutorLiveRoom = () => {
     copied={copied}
     handleCloseRoom={handleCloseRoom}
     isDeleting={isDeleting}
+    onKickStudent={handleKickStudent}
   />
   ) : (
     <MonitoringView 

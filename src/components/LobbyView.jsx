@@ -8,7 +8,8 @@ import {
   FaSpinner, 
   FaCheckCircle,
   FaUserGraduate,
-  FaTrash
+  FaTrash,
+  FaUserMinus
 } from 'react-icons/fa';
 
 const LobbyView = ({ 
@@ -18,7 +19,8 @@ const LobbyView = ({
   handleCopyCode, 
   copied, 
   handleCloseRoom, 
-  isDeleting 
+  isDeleting,
+  onKickStudent 
 }) => {
   return (
     <div className="max-w-6xl mx-auto py-5 px-4 sm:px-6 lg:px-8">
@@ -105,6 +107,13 @@ const LobbyView = ({
                         <span className="w-1.5 h-1.5 rounded-full bg-green-500"></span> Ready
                       </div>
                     </div>
+                    <button
+                      onClick={() => onKickStudent(student._id)}
+                      className="p-2 text-gray-400 hover:text-red-600 hover:bg-red-50 rounded-lg group-hover:opacity-100 transition-all"
+                      title="Remove Student"
+                    >
+                      <FaUserMinus />
+                    </button>
                   </div>
                 ))}
               </div>

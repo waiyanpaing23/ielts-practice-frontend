@@ -15,11 +15,13 @@ const LearnerLobby = () => {
   useEffect(() => {
     const fetchRoomData = async () => {
       try {
-        const guestId = localStorage.getItem('guestId')
+        const guestId = localStorage.getItem('guestId') || sessionStorage.getItem('guestId');
+        const token = localStorage.getItem('token') || sessionStorage.getItem('token');
         
         const response = await api.get(`/rooms/${roomId}`, {
           headers: {
-            'x-guest-id': guestId || '' // Send the guest ID if they have one
+            'x-guest-id': guestId || '', // Send the guest ID if they have one
+            'Authorization': token ? `Bearer ${token}` : ''
           }
         });
 
@@ -33,11 +35,50 @@ const LearnerLobby = () => {
 
         setRoom(response.data.data);
 
-        socket.connect();
+        const storedUser = localStorage.getItem('user') || sessionStorage.getItem('user');
+        const parsedUser = storedUser ? JSON.parse(storedUser) : null;
+        const userId = parsedUser ? (parsedUser.id || parsedUser._id) : null; 
+
+        const myParticipant = roomData.participants.find(p => {
+          // 1. Logged-in User Match
+          if (userId && p.user) {
+            // Check if backend populated the user object, or if it's just an ID
+            const pUserId = p.user._id || p.user.id || p.user;
+            // Force both to be strings so the comparison never fails
+            return String(pUserId) === String(userId);
+          }
+          
+          // 2. Guest User Match
+          if (guestId && p.guestId) {
+            return String(p.guestId) === String(guestId);
+          }
+          
+          return false;
+        });
+
+        if (myParticipant) {
+          localStorage.setItem('myParticipantId', myParticipant._id);
+        } else {
+          console.warn("Could not find my participant ID in the room data! userId:", userId, "guestId:", guestId);
+        }
+
+        if (!socket.connected) {
+          socket.connect();
+        }
         socket.emit('join-room', roomId);
 
       } catch (err) {
+        if (err.response && err.response.status === 403) {
+           alert("You do not have permission to access this room. You may have been removed by the tutor.");
+           localStorage.removeItem('activeRoomId');
+           localStorage.removeItem('myParticipantId');
+           navigate('/join-room', { 
+             state: { kickMessage: "Access denied. You have been removed from the room." } 
+           });
+           return;
+        }
         setError('Lost connection to the room. Please try joining again.');
+
       } finally {
         setIsLoading(false);
       }
@@ -45,17 +86,48 @@ const LearnerLobby = () => {
 
     fetchRoomData();
 
+    const handleConnect = () => {
+      console.log("Learner Socket Connected! Joining room...");
+      socket.emit('join-room', roomId);
+    };
+
+    socket.on('connect', handleConnect);
+
+    if (socket.connected) {
+      handleConnect();
+    } else {
+      socket.connect();
+    }
+
     const handleAssessmentStarted = () => {
       console.log("Assessment started by tutor! Teleporting...");
       navigate(`/learner/assessment/${roomId}`);
     };
 
+    const handleKicked = (kickedStudentId) => {
+      const myId = localStorage.getItem('myParticipantId');
+      
+      console.log(`Server says ID ${kickedStudentId} was kicked. My ID is ${myId}`);
+
+      if (String(myId) === String(kickedStudentId)) {
+        alert("You have been removed from the assessment room by the tutor.");
+        localStorage.removeItem('activeRoomId');
+        localStorage.removeItem('myParticipantId');
+        navigate('/join-room', { 
+          state: { kickMessage: "You have been removed from the assessment room by the tutor." } 
+        });
+      }
+    };
+
     socket.on('assessment-started', handleAssessmentStarted);
+    socket.on('you_have_been_kicked', handleKicked);
 
     // 3. Cleanup on unmount
     return () => {
+      socket.off('connect', handleConnect);
       socket.off('assessment-started', handleAssessmentStarted);
-      socket.disconnect();
+      socket.off('you_have_been_kicked', handleKicked);
+      // socket.disconnect();
     };
     
   }, [roomId]);

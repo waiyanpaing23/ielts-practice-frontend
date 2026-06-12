@@ -1,10 +1,12 @@
 import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useLocation, useNavigate } from 'react-router-dom';
 import { FaArrowLeft, FaDoorOpen, FaSpinner, FaKeyboard, FaUser } from 'react-icons/fa';
 import api from '../api/axios';
 
 const JoinRoom = () => {
   const navigate = useNavigate();
+  const location = useLocation();
+
   const [roomCode, setRoomCode] = useState('');
   const [guestName, setGuestName] = useState('');
   const [isLoading, setIsLoading] = useState(false);
@@ -13,6 +15,15 @@ const JoinRoom = () => {
   // Check if the user is logged in by looking for your auth token
   const token = localStorage.getItem('token') || sessionStorage.getItem('token');
   const isLoggedIn = !!token;
+
+  useEffect(() => {
+    if (location.state && location.state.kickMessage) {
+      setError(location.state.kickMessage);
+      
+      // Clean up the history state so the error disappears if they manually refresh the page
+      window.history.replaceState({}, document.title);
+    }
+  }, [location]);
 
   // If they played before as a guest, grab their old name so they don't have to retype it
   useEffect(() => {
@@ -83,7 +94,7 @@ const JoinRoom = () => {
       {/* Back to Dashboard Link */}
       <div className="w-full max-w-md mb-6">
         <button 
-          onClick={() => navigate(-1)} 
+          onClick={() => navigate(isLoggedIn ? '/dashboard' : '/')} 
           className="flex items-center gap-2 text-gray-500 hover:text-indigo-600 transition-colors font-medium"
         >
           <FaArrowLeft className="w-4 h-4" /> Back to Dashboard
